@@ -27,14 +27,14 @@ namespace UniSense
             HighFrequenceyMotorSpeed = highFrequenceyMotorSpeed;
         }
     }
-    
+
     public enum DualSenseMicLedState
     {
         Off,
         On,
         Pulsating,
     }
-    
+
     public enum DualSenseTriggerEffectType : byte
     {
         NoResistance = 0,
@@ -43,7 +43,7 @@ namespace UniSense
         EffectEx,
         Calibrate,
     }
-    
+
     [StructLayout(LayoutKind.Explicit)]
     public struct DualSenseTriggerState
     {
@@ -65,6 +65,12 @@ namespace UniSense
         public byte StartPosition;
         public byte EndPosition;
         public byte Force;
+    }
+
+    public enum DualSenseTrigger
+    {
+        Left,
+        Right,
     }
 
     public struct DualSenseEffectExProperties
@@ -94,7 +100,7 @@ namespace UniSense
         private const byte LED_MASK = LED1 | LED2 | LED3 | LED4 | LED5;
 
         private const byte FADE = 0x40;
-        
+
         public byte Value { get; private set; }
 
         public PlayerLedState(bool led1, bool led2, bool led3, bool led4, bool led5, bool fade = true)
@@ -110,7 +116,7 @@ namespace UniSense
 
         public PlayerLedState(byte led, bool fade = false)
         {
-            Value = (byte) (led & LED_MASK);
+            Value = (byte)(led & LED_MASK);
             if (fade) Value |= FADE;
         }
     }

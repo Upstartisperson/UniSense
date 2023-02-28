@@ -54,10 +54,12 @@ namespace UniSense.LowLevel
 
         [FieldOffset(4)] public byte rightStickY;
 
-        [InputControl(name = "leftTrigger", format = "BYTE")] [FieldOffset(5)]
+        [InputControl(name = "leftTrigger", format = "BYTE")]
+        [FieldOffset(5)]
         public byte leftTrigger;
 
-        [InputControl(name = "rightTrigger", format = "BYTE")] [FieldOffset(6)]
+        [InputControl(name = "rightTrigger", format = "BYTE")]
+        [FieldOffset(6)]
         public byte rightTrigger;
 
         [InputControl(name = "dpad", format = "BIT", layout = "Dpad", sizeInBits = 4, defaultState = 8)]
@@ -92,7 +94,7 @@ namespace UniSense.LowLevel
         [InputControl(name = "micMuteButton", layout = "Button", displayName = "Mic Mute", bit = 2)]
         [FieldOffset(10)]
         public byte buttons3;
-        
+
         [InputControl(name = "gyro", format = "VC3S", layout = "Vector3")]
         [InputControl(name = "gyro/x", layout = "Axis", format = "SHRT")]
         [InputControl(name = "gyro/y", offset = 2, layout = "Axis", format = "SHRT")]
@@ -100,7 +102,7 @@ namespace UniSense.LowLevel
         [FieldOffset(16)] public short gyroPitch;
         [FieldOffset(18)] public short gyroYaw;
         [FieldOffset(20)] public short gyroRoll;
-    
+
         [InputControl(name = "accel", format = "VC3S", layout = "Vector3")]
         [InputControl(name = "accel/x", layout = "Axis", format = "SHRT")]
         [InputControl(name = "accel/y", offset = 2, layout = "Axis", format = "SHRT")]
