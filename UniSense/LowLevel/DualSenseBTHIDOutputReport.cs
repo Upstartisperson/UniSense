@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.InputSystem.LowLevel;
@@ -6,14 +6,13 @@ using UnityEngine.InputSystem.Utilities;
 
 namespace UniSense.LowLevel
 {
-   
     [StructLayout(LayoutKind.Explicit, Size = kSize)]
-    internal unsafe struct DualSenseHIDOutputReport : IInputDeviceCommandInfo
+    internal unsafe struct DualSenseBTHIDOutputReport : IInputDeviceCommandInfo
     {
         public static FourCC Type => new FourCC('H', 'I', 'D', 'O');
 
         internal const int kSize = InputDeviceCommand.BaseCommandSize + 48;
-       
+        internal const int BTOffset = 0;
         internal const int kTriggerParamSize = 9;
         internal const int kReportId = 2;
 
@@ -54,34 +53,36 @@ namespace UniSense.LowLevel
             Medium = 0x1,
             Low = 0x2,
         }
+       
         [FieldOffset(0)] public InputDeviceCommand baseCommand;
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 0)] public byte reportId;
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 1)] public Flags1 flags1;
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 2)] public Flags2 flags2;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 0 + BTOffset)] public byte reportId;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 1 + BTOffset)] public Flags1 flags1;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 2 + BTOffset)] public Flags2 flags2;
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 3)] public byte lowFrequencyMotorSpeed;
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 4)] public byte highFrequencyMotorSpeed;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 3 + BTOffset)] public byte lowFrequencyMotorSpeed;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 4 + BTOffset)] public byte highFrequencyMotorSpeed;
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 9)] public InternalMicLedState micLedState;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 9 + BTOffset)] public InternalMicLedState micLedState;
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 11)] public byte rightTriggerMode;
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 12)] public fixed byte rightTriggerParams[kTriggerParamSize];
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 11 + BTOffset)] public byte rightTriggerMode;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 12 + BTOffset)] public fixed byte rightTriggerParams[kTriggerParamSize];
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 22)] public byte leftTriggerMode;
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 23)] public fixed byte leftTriggerParams[kTriggerParamSize];
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 22 + BTOffset)] public byte leftTriggerMode;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 23 + BTOffset)] public fixed byte leftTriggerParams[kTriggerParamSize];
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 37)] public byte powerReduction;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 37 + BTOffset)] public byte powerReduction;
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 39)] public LedFlags ledFlags;
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 42)] public byte ledPulseOption;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 39 + BTOffset)] public LedFlags ledFlags;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 42 + BTOffset)] public byte ledPulseOption;
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 43)] public InternalPlayerLedBrightness playerLedBrightness;
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 44)] public byte playerLedState;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 43 + BTOffset)] public InternalPlayerLedBrightness playerLedBrightness;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 44 + BTOffset)] public byte playerLedState;
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 45)] public byte lightBarRed;
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 46)] public byte lightBarGreen;
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 47)] public byte lightBarBlue;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 45 + BTOffset)] public byte lightBarRed;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 46 + BTOffset)] public byte lightBarGreen;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 47 + BTOffset)] public byte lightBarBlue;
+
         public FourCC typeStatic => Type;
 
         public void SetMotorSpeeds(float lowFreq, float highFreq)
@@ -101,7 +102,6 @@ namespace UniSense.LowLevel
             {
                 flags1 &= ~Flags1.MainMotors2;
             }
-            
         }
 
         public void SetMicLedState(DualSenseMicLedState state)
@@ -231,11 +231,11 @@ namespace UniSense.LowLevel
             ledFlags |= LedFlags.LightBarFade;
             ledPulseOption = 0x01;
         }
+
        
-       
-        public static DualSenseHIDOutputReport Create()
+        public static DualSenseBTHIDOutputReport Create()
         {
-            return new DualSenseHIDOutputReport
+            return new DualSenseBTHIDOutputReport
             {
                 baseCommand = new InputDeviceCommand(Type, kSize),
                 reportId = kReportId,

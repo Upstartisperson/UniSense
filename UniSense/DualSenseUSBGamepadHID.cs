@@ -6,12 +6,13 @@ using UnityEngine.InputSystem.Controls;
 using UnityEngine.InputSystem.DualShock;
 using UnityEngine.InputSystem.Layouts;
 using UnityEngine.Scripting;
+using System.Collections.Generic;
 
 namespace UniSense
 {
 
 	[InputControlLayout(
-		stateType = typeof(DualSenseHIDInputReport),
+		stateType = typeof(DualSenseUSBHIDInputReport),
 		displayName = "PS5 Controller")]
 	[Preserve]
 #if UNITY_EDITOR
@@ -22,7 +23,7 @@ namespace UniSense
 	//It uses unity inbuilt input InputDevice.ExecuteCommand<TCommand> method in combination with 
 	//the custom device command "language" DualSenseHIDOutputReport.
 
-	public class DualSenseGamepadHID : DualShockGamepad
+	internal class DualSenseUSBGamepadHID : DualShockGamepad
 	{
 		private DualSenseHIDOutputReport CurrentCommand = DualSenseHIDOutputReport.Create();
 		public ButtonControl leftTriggerButton { get; protected set; }
@@ -34,43 +35,64 @@ namespace UniSense
 
 
 #if UNITY_EDITOR
-		static DualSenseGamepadHID()
+		static DualSenseUSBGamepadHID()
 		{
 			Initialize();
 		}
 #endif
 
 		/// <summary>
-		/// Finds the first DualSense connected by the player or <c>null</c> if 
+		/// Finds all the connected DualSense controllers or <c>null</c> if 
 		/// there is no one connected to the system.
 		/// </summary>
-		/// <returns>A DualSenseGamepadHID instance or <c>null</c>.</returns>
-		public static DualSenseGamepadHID FindFirst()
+		/// <returns>An array of gamepads or <c>null</c>.</returns>
+		public static Gamepad[] FindAll()
 		{
+			
+			List<Gamepad> dualSenseUSBGamepads = new List<Gamepad>();
 			foreach (var gamepad in all)
 			{
-				var isDualSenseGamepad = gamepad is DualSenseGamepadHID;
-				if (isDualSenseGamepad) return gamepad as DualSenseGamepadHID;
+				var isDualSenseGamepad = gamepad is DualSenseUSBGamepadHID;
+				if (isDualSenseGamepad) dualSenseUSBGamepads.Add(gamepad);
+               
 			}
 
-			return null;
+			return (dualSenseUSBGamepads.Count > 0) ? dualSenseUSBGamepads.ToArray() : null;
 		}
 
 		/// <summary>
+		/// Finds the first DualSense connected by the player or <c>null</c> if 
+		/// there is no one connected to the system.
+		/// </summary>
+		/// <returns>A gamepad instance or <c>null</c>.</returns>
+		public static Gamepad FindFirst()
+        {
+			foreach (var gamepad in all)
+			{
+				var isDualSenseGamepad = gamepad is DualSenseUSBGamepadHID;
+				if (isDualSenseGamepad) return gamepad;
+			}
+			return null;
+		}
+
+		///// <summary>
 		/// Finds the DualSense last used/connected by the player or <c>null</c> if 
 		/// there is no one connected to the system.
 		/// </summary>
 		/// <returns>A DualSenseGamepadHID instance or <c>null</c>.</returns>
-		public static DualSenseGamepadHID FindCurrent() => Gamepad.current as DualSenseGamepadHID;
+		
+		
+		//public static DualSenseUSBGamepadHID FindCurrent() => Gamepad.current as DualSenseUSBGamepadHID;
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 		static void Initialize()
 		{
-			InputSystem.RegisterLayout<DualSenseGamepadHID>(
+			InputSystem.RegisterLayout<DualSenseUSBGamepadHID>(
 				matches: new InputDeviceMatcher()
 					.WithInterface("HID")
 					.WithManufacturer("Sony.+Entertainment")
 					.WithCapability("vendorId", 0x54C)
+					.WithCapability("inputReportSize", 64)
 					.WithCapability("productId", 0xCE6));
 		}
 

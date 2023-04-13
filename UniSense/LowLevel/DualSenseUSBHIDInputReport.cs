@@ -6,7 +6,7 @@ using UnityEngine.InputSystem.Utilities;
 namespace UniSense.LowLevel
 {
     [StructLayout(LayoutKind.Explicit, Size = 64)]
-    internal struct DualSenseHIDInputReport : IInputStateTypeInfo
+    internal struct DualSenseUSBHIDInputReport : IInputStateTypeInfo
     {
         public FourCC format => new FourCC('H', 'I', 'D');
 
