@@ -13,7 +13,7 @@ using DS5W;
 public class DualSenseManager : MonoBehaviour
 {
 	#region Variables
-	private Dictionary<string, int> _controllerLookup;
+	private Dictionary<string, int> _controllerLookup = new Dictionary<string, int>();
 	private DeviceEnumInfo[] infos;
 	uint devicecount = 0;
 	OS_Type oS;
@@ -86,6 +86,7 @@ public class DualSenseManager : MonoBehaviour
 				default: Debug.LogError("No connection type defined"); break;
 			}
 		}
+		
 
 	}
 	#endregion
@@ -95,45 +96,55 @@ public class DualSenseManager : MonoBehaviour
 	private void Start()
 
 	{
+		for(int i = 0; i < _dualSenseControllers.Length; i++)
+        {
+			_dualSenseControllers[i] = new DualSenseController();
+        }
 		oS = (IntPtr.Size == 4) ? OS_Type._x86 : OS_Type._x64;
 		DualSenseInfo dualSenseInfo = new DualSenseInfo();
 		Gamepad[] _USBGamepads = DualSenseUSBGamepadHID.FindAll();
 		Gamepad[] _BTGamepads = DualSenseBTGamepadHID.FindAll();
 		DS5WenumDevices(ref infos, 16);
-		foreach (Gamepad gamepad in _BTGamepads)
+
+		if (_BTGamepads != null && _BTGamepads.Length > 0)
 		{
-			string _serialNumber = gamepad.description.serial.ToString();
-
-			if (_controllerLookup.ContainsKey(_serialNumber))
+			foreach (Gamepad gamepad in _BTGamepads)
 			{
-				_dualSenseControllers[_controllerLookup[_serialNumber]].AddController(gamepad, DualSenseConnectionType.BT);
-			}
-			else
-			{
-				_controllerLookup.Add(_serialNumber, _controllerCount);
-				_dualSenseControllers[_controllerCount].AddController(gamepad, DualSenseConnectionType.BT);
-				_controllerCount++;
-			}
+				string _serialNumber = gamepad.description.serial.ToString();
 
+				if (_controllerLookup.ContainsKey(_serialNumber))
+				{
+					_dualSenseControllers[_controllerLookup[_serialNumber]].AddController(gamepad, DualSenseConnectionType.BT);
+				}
+				else
+				{
+					_controllerLookup.Add(_serialNumber, _controllerCount);
+					_dualSenseControllers[_controllerCount].AddController(gamepad, DualSenseConnectionType.BT);
+					_controllerCount++;
+				}
+
+			}
 		}
 
-		foreach (Gamepad gamepad in _USBGamepads)
+		if (_USBGamepads !=null && _USBGamepads.Length > 0)
 		{
-			string _serialNumber = gamepad.description.serial.ToString();
-
-			if (_controllerLookup.ContainsKey(_serialNumber))
+			foreach (Gamepad gamepad in _USBGamepads)
 			{
-				_dualSenseControllers[_controllerLookup[_serialNumber]].AddController(gamepad, DualSenseConnectionType.USB);
-			}
-			else
-			{
-				_controllerLookup.Add(_serialNumber, _controllerCount);
-				_dualSenseControllers[_controllerCount].AddController(gamepad, DualSenseConnectionType.USB);
-				_controllerCount++;
-			}
+				string _serialNumber = gamepad.description.serial.ToString();
 
+				if (_controllerLookup.ContainsKey(_serialNumber))
+				{
+					_dualSenseControllers[_controllerLookup[_serialNumber]].AddController(gamepad, DualSenseConnectionType.USB);
+				}
+				else
+				{
+					_controllerLookup.Add(_serialNumber, _controllerCount);
+					_dualSenseControllers[_controllerCount].AddController(gamepad, DualSenseConnectionType.USB);
+					_controllerCount++;
+				}
+
+			}
 		}
-
 		DS5WProssesDeviceInfo(infos);
 	}
 
@@ -445,7 +456,7 @@ public class DualSenseManager : MonoBehaviour
 	{
 		foreach (DeviceEnumInfo info in DeviceEnum)
 		{
-			if (info._internal.path == null) continue;
+			if (info._internal.path == null || info._internal.path == "") continue;
 
 			string _serialNumber = info._internal.serialNumber;
 			switch (info._internal.Connection)
@@ -486,5 +497,3 @@ public class DualSenseManager : MonoBehaviour
 	}
 	#endregion
 }
-
-

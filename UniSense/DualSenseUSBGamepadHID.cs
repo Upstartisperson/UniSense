@@ -23,7 +23,7 @@ namespace UniSense
 	//It uses unity inbuilt input InputDevice.ExecuteCommand<TCommand> method in combination with 
 	//the custom device command "language" DualSenseHIDOutputReport.
 
-	internal class DualSenseUSBGamepadHID : DualShockGamepad
+	public class DualSenseUSBGamepadHID : DualShockGamepad
 	{
 		private DualSenseHIDOutputReport CurrentCommand = DualSenseHIDOutputReport.Create();
 		public ButtonControl leftTriggerButton { get; protected set; }
@@ -48,13 +48,13 @@ namespace UniSense
 		/// <returns>An array of gamepads or <c>null</c>.</returns>
 		public static Gamepad[] FindAll()
 		{
-			
+
 			List<Gamepad> dualSenseUSBGamepads = new List<Gamepad>();
 			foreach (var gamepad in all)
 			{
 				var isDualSenseGamepad = gamepad is DualSenseUSBGamepadHID;
 				if (isDualSenseGamepad) dualSenseUSBGamepads.Add(gamepad);
-               
+
 			}
 
 			return (dualSenseUSBGamepads.Count > 0) ? dualSenseUSBGamepads.ToArray() : null;
@@ -66,7 +66,7 @@ namespace UniSense
 		/// </summary>
 		/// <returns>A gamepad instance or <c>null</c>.</returns>
 		public static Gamepad FindFirst()
-        {
+		{
 			foreach (var gamepad in all)
 			{
 				var isDualSenseGamepad = gamepad is DualSenseUSBGamepadHID;
@@ -75,25 +75,29 @@ namespace UniSense
 			return null;
 		}
 
-		///// <summary>
+		/// <summary>
 		/// Finds the DualSense last used/connected by the player or <c>null</c> if 
 		/// there is no one connected to the system.
 		/// </summary>
 		/// <returns>A DualSenseGamepadHID instance or <c>null</c>.</returns>
-		
-		
-		//public static DualSenseUSBGamepadHID FindCurrent() => Gamepad.current as DualSenseUSBGamepadHID;
+		public static DualSenseUSBGamepadHID FindCurrent() => Gamepad.current as DualSenseUSBGamepadHID;
+
+
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 		static void Initialize()
 		{
 			InputSystem.RegisterLayout<DualSenseUSBGamepadHID>(
 				matches: new InputDeviceMatcher()
-					.WithInterface("HID")
-					.WithManufacturer("Sony.+Entertainment")
-					.WithCapability("vendorId", 0x54C)
-					.WithCapability("inputReportSize", 64)
-					.WithCapability("productId", 0xCE6));
+				.WithInterface("HID")
+				.WithManufacturer("Sony.+Entertainment")
+				.WithCapability("vendorId", 0x54C)
+				.WithCapability("inputReportSize", 78)
+				.WithCapability("productId", 0xCE6));
+
+
+
+
 		}
 
 		protected override void FinishSetup()

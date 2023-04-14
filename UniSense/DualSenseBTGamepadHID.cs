@@ -7,6 +7,7 @@ using UnityEngine.InputSystem.DualShock;
 using UnityEngine.InputSystem.Layouts;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
+
 namespace UniSense
 {
 
@@ -41,10 +42,10 @@ namespace UniSense
 #endif
 
 		/// <summary>
-		/// Finds the first DualSense connected by the player or <c>null</c> if 
+		/// Finds all the connected DualSense controllers or <c>null</c> if 
 		/// there is no one connected to the system.
 		/// </summary>
-		/// <returns>A DualSenseGamepadHID instance or <c>null</c>.</returns>
+		/// <returns>An array of gamepads or <c>null</c>.</returns>
 		public static Gamepad[] FindAll()
 		{
 
@@ -56,7 +57,22 @@ namespace UniSense
 
 			}
 
-			return dualSenseUSBGamepads.ToArray();
+			return (dualSenseUSBGamepads.Count > 0) ? dualSenseUSBGamepads.ToArray() : null;
+		}
+
+		/// <summary>
+		/// Finds the first DualSense connected by the player or <c>null</c> if 
+		/// there is no one connected to the system.
+		/// </summary>
+		/// <returns>A gamepad instance or <c>null</c>.</returns>
+		public static Gamepad FindFirst()
+		{
+			foreach (var gamepad in all)
+			{
+				var isDualSenseGamepad = gamepad is DualSenseBTGamepadHID;
+				if (isDualSenseGamepad) return gamepad;
+			}
+			return null;
 		}
 
 		/// <summary>
@@ -64,9 +80,8 @@ namespace UniSense
 		/// there is no one connected to the system.
 		/// </summary>
 		/// <returns>A DualSenseGamepadHID instance or <c>null</c>.</returns>
-		
-	
-		//public static DualSenseBTGamepadHID FindCurrent() => Gamepad.current as DualSenseBTGamepadHID;
+		public static DualSenseBTGamepadHID FindCurrent() => Gamepad.current as DualSenseBTGamepadHID;
+
 		
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
