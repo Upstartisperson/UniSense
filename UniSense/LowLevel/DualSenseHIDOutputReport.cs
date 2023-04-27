@@ -199,8 +199,13 @@ namespace UniSense.LowLevel
             lightBarBlue = (byte)Mathf.Clamp(color.b * 255, 0, 255);
         }
 
-        public void SetPlayerLedBrightness(PlayerLedBrightness brightness)
+       
+
+        public void SetPlayerLedState(PlayerLedState state, PlayerLedBrightness brightness)
         {
+            flags2 |= Flags2.PlayerLed;
+            ledPulseOption = 0x02;
+            playerLedState = state.Value;
             ledFlags |= LedFlags.PlayerLedBrightness;
             ledPulseOption = 0x02;
             switch (brightness)
@@ -219,20 +224,22 @@ namespace UniSense.LowLevel
             }
         }
 
-        public void SetPlayerLedState(PlayerLedState state)
-        {
-            flags2 |= Flags2.PlayerLed;
-            ledPulseOption = 0x02;
-            playerLedState = state.Value;
-        }
-
         public void DisableLightBarAndPlayerLed()
         {
             ledFlags |= LedFlags.LightBarFade;
             ledPulseOption = 0x01;
         }
        
-       
+       public byte[] RetriveCommand()
+        {
+            DualSenseHIDOutputReport myCommand = this;
+            byte[] commandBytes = new byte[Marshal.SizeOf(typeof(DualSenseHIDOutputReport))];
+            IntPtr ptr = Marshal.AllocHGlobal(commandBytes.Length);
+            Marshal.StructureToPtr(myCommand, ptr, false);
+            Marshal.Copy(ptr, commandBytes, 0, commandBytes.Length);
+            Marshal.FreeHGlobal(ptr);
+            return commandBytes;
+        }
         public static DualSenseHIDOutputReport Create()
         {
             return new DualSenseHIDOutputReport

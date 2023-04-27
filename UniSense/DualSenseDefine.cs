@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+
 using UnityEngine;
 
 namespace UniSense
@@ -88,6 +89,14 @@ namespace UniSense
         High,
         Medium,
         Low,
+    }
+    public enum PlayerLED : byte
+    {
+        Player1 = 0x10,
+        Player2 = 0x08,
+        Player3 = 0x04,
+        Player4 = 0x02,
+        Player5 = 0x01
     }
 
     public struct PlayerLedState

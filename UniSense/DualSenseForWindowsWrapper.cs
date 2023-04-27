@@ -33,7 +33,13 @@ namespace DS5W
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
         public static extern DS5W_RetrunValue setDeviceRawOutputState(ref DeviceContext ptrContext, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] ptrOutputByteMap, int size);
+
+        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern DS5W_RetrunValue SetSerialNumber(ref DeviceEnumInfo ptrEnumInfo, [MarshalAs(UnmanagedType.LPWStr, SizeConst = 260)] string serialNumber);
+           
+
     }
+
     /// <summary>
     /// Class that directly references the 32-bit version of the C++ DLL
     /// </summary>
@@ -74,8 +80,7 @@ namespace DS5W
             ptrBuffer =  Marshal.AllocHGlobal(Marshal.SizeOf(typeof(DeviceEnumInfo)) * infos.Length);
             for (int i = 0; i < infos.Length; i++)
             {
-                IntPtr elemPtr = ptrBuffer + (i * Marshal.SizeOf(typeof(DeviceEnumInfo)));
-                Marshal.StructureToPtr(infos[i], elemPtr, false);
+                Marshal.StructureToPtr(infos[i], ptrBuffer + (i * Marshal.SizeOf(typeof(DeviceEnumInfo))), false);  
             }
         }
         /// <summary>

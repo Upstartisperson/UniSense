@@ -92,7 +92,7 @@ namespace UniSense
 				.WithInterface("HID")
 				.WithManufacturer("Sony.+Entertainment")
 				.WithCapability("vendorId", 0x54C)
-				.WithCapability("inputReportSize", 78)
+				.WithCapability("inputReportSize", 64)
 				.WithCapability("productId", 0xCE6));
 
 
@@ -223,13 +223,14 @@ namespace UniSense
 			if (state.PlayerLedBrightness.HasValue)
 			{
 				var playerLedBrightness = state.PlayerLedBrightness.Value;
-				command.SetPlayerLedBrightness(playerLedBrightness);
+			//	command.SetPlayerLedBrightness(playerLedBrightness);
 			}
 
 			if (state.PlayerLed.HasValue)
 			{
+				var playerLedBrightness = state.PlayerLedBrightness.Value;
 				var playerLed = state.PlayerLed.Value;
-				command.SetPlayerLedState(playerLed);
+				command.SetPlayerLedState(playerLed, playerLedBrightness);
 			}
 
 			ExecuteCommand(ref command);

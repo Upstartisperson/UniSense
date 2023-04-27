@@ -13,7 +13,8 @@ using UnityEngine.InputSystem.HID;
 using UnityEngine.InputSystem.Layouts;
 public class NewBehaviourScript : MonoBehaviour
 {
-    DualSenseManager dualSense;
+    DualSense dualSense;
+    DualSenseHIDOutputReport CurrentCommand = new DualSenseHIDOutputReport();
     public DualSenseTrigger trigger;
     [Range(0f, 1f)]
     public float force;
@@ -25,57 +26,49 @@ public class NewBehaviourScript : MonoBehaviour
     public float L_Rumble;
 
 
-  public  bool connected = true;
+    public bool connected = true;
     bool thing = true;
     DeviceContext deviceContext;
     DS5W_RetrunValue DevcieStatus;
     public void Start()
     {
-      // int deviceid = DualSenseUSBGamepadHID.FindFirst().deviceId;
-      // static extern HID.HIDDeviceDescriptor ReadHIDDeviceDescriptor(deviceid, ref InputDeviceDescription deviceDescription, IInputRuntime runtime)
 
 
-     
+        dualSense = GetComponent<DualSense>();
 
-    uint deviceCount = 0;
-        deviceContext = new DeviceContext();
-        DeviceEnumInfo[] infos = new DeviceEnumInfo[16];
-        IntPtr ptrBuffer = IntPtr.Zero;
-        DS5WHelpers.BuildEnumDeviceBuffer(ref ptrBuffer, infos);
-        DS5W_RetrunValue status = DS5W_x64.enumDevices(ref ptrBuffer, (uint)16, ref deviceCount, false);
-        if (status != DS5W_RetrunValue.OK) Debug.LogError(status.ToString());
-        DS5WHelpers.DeconstructEnumDeviceBuffer(ref ptrBuffer, ref infos);
-        status = DS5W_x64.initDeviceContext(ref infos[0], ref deviceContext);
-        if (status != DS5W_RetrunValue.OK) Debug.LogError(status.ToString());
+        // int deviceid = DualSenseUSBGamepadHID.FindFirst().deviceId;
+        // static extern HID.HIDDeviceDescriptor ReadHIDDeviceDescriptor(deviceid, ref InputDeviceDescription deviceDescription, IInputRuntime runtime)
+
+
+
+        //DualSense sense = GetComponent<DualSense>();
+        //      IDualSenseManager dualSenseManager = GetComponent<DualSense>();
+
+        //      dualSenseManager.TestClass();
+
+        //  uint deviceCount = 0;
+        //      deviceContext = new DeviceContext();
+        //      DeviceEnumInfo[] infos = new DeviceEnumInfo[16];
+        //      IntPtr ptrBuffer = IntPtr.Zero;
+        //      DS5WHelpers.BuildEnumDeviceBuffer(ref ptrBuffer, infos);
+        //      DS5W_RetrunValue status = DS5W_x64.enumDevices(ref ptrBuffer, (uint)16, ref deviceCount, false);
+        //      if (status != DS5W_RetrunValue.OK) Debug.LogError(status.ToString());
+        //      DS5WHelpers.DeconstructEnumDeviceBuffer(ref ptrBuffer, ref infos);
+        //      //status = DS5W_x64.SetSerialNumber(ref infos[0], "boobieshehe1");
+        //      status = DS5W_x64.initDeviceContext(ref infos[0], ref deviceContext);
+        //      if (status != DS5W_RetrunValue.OK) Debug.LogError(status.ToString());
     }
 
     // Update is called once per frame
     void Update()
     {
-        //if (connected)
-        //{
-        //    dualSense.SetTriggerContinuousResistance(trigger, force, posistion);
-        //    dualSense.SetHapticMotorSpeeds(L_Rumble, H_Rumble);
-        //  //  dualSense.SendCommand();
-        //    byte[] inbuffer = dualSense.RetriveCommand();
-        //    byte[] outbuffer = new byte[47];
-        //    Array.Copy(inbuffer, 9, outbuffer, 0, 47);
 
 
-        //    string longerstring = "Bytes: ";
-        //    foreach (byte _byte in outbuffer)
-        //    {
-        //        longerstring += _byte.ToString() + ", ";
-        //    }
-        //    Debug.Log(longerstring);
-        //    DevcieStatus = DS5W_x64.setDeviceRawOutputState(ref deviceContext, outbuffer, outbuffer.Length);
-        //}
-        //else if(!connected && thing)
-        //{
-        //    thing = false;
-        //    DS5W_x64.freeDeviceContext(ref deviceContext);
-        //}
-       
+        if (connected)
+        {
+            dualSense.SetTriggerContinuousResistance(trigger, force, posistion);
+            dualSense.SetMotorSpeeds(L_Rumble, H_Rumble);
+            dualSense.SendCommand();
 
 
 
@@ -88,11 +81,9 @@ public class NewBehaviourScript : MonoBehaviour
 
 
 
-        // dualSense.SendCommand();
-    }
-    private void OnDisable()
-    {
-
-        DS5W_x64.freeDeviceContext(ref deviceContext);
+            // dualSense.SendCommand();
+        }
     }
 }
+  
+

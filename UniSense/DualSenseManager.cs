@@ -96,6 +96,8 @@ public class DualSenseManager : MonoBehaviour
 	private void Start()
 
 	{
+		
+	
 		for(int i = 0; i < _dualSenseControllers.Length; i++)
         {
 			_dualSenseControllers[i] = new DualSenseController();
