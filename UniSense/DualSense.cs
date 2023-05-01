@@ -9,6 +9,7 @@ using UnityEngine.InputSystem.LowLevel;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using DS5W;
+using UniSense.Connections;
 
 namespace UniSense
 {
@@ -18,7 +19,7 @@ namespace UniSense
 
 
 	}
-
+	//Confirmed no memory leaks
 	public class DualSense : MonoBehaviour, IDualSenseManager
 	{
 
@@ -129,8 +130,13 @@ namespace UniSense
 
 		private void Start()
 		{
+			PlayerInput playerInput = GetComponent<PlayerInput>();
+			PlayerInputManager playerInputManager = GetComponent<PlayerInputManager>();
+			 
 
+			//var somthing = InputSystem.devices;
 
+			//Debug.Log("hu");
 			//Initialize the _dualSenseControllers array with blank Dualsensecontroller
 			for (int i = 0; i < _dualSenseControllers.Length; i++)
 			{
@@ -523,13 +529,21 @@ namespace UniSense
 			}
 		}
 		#endregion
+		public bool memtest = false;
+        private void Update()
+        {
+			if (!memtest) return;
+			for(int i = 0; i < 100; i++)
+            {
+				DS5WenumDevices(ref infos, 16);
+			}
+			
+        }
 
 
-
-
-		//This region of the script functions as an easy way of communicating with the DualSense controller's haptic and LED systems
-		#region Commands
-		private DualSenseHIDOutputReport CurrentCommand = DualSenseHIDOutputReport.Create();
+        //This region of the script functions as an easy way of communicating with the DualSense controller's haptic and LED systems
+        #region Commands
+        private DualSenseHIDOutputReport CurrentCommand = DualSenseHIDOutputReport.Create();
 
 		private DualSenseController senseController = new DualSenseController();
 
@@ -620,6 +634,11 @@ namespace UniSense
 
 		public void SetCurrentGamepad(DualSenseController gamepad)
         {
+			if (senseController == null)
+            {
+				senseController = gamepad;
+				return;
+            }
             switch (senseController.connectionStatus)
             {
 				case DualSenseConnectionStatus.Disconected: break;

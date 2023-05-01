@@ -95,7 +95,10 @@ namespace DS5W
                 IntPtr infoPtr = ptrBuffer + i * Marshal.SizeOf<DeviceEnumInfo>();
                 infos[i] = Marshal.PtrToStructure<DeviceEnumInfo>(infoPtr);
             }
-            Marshal.FreeHGlobal(ptrBuffer);
+            if (ptrBuffer != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(ptrBuffer);
+            }
         }
 
 
