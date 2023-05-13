@@ -11,10 +11,11 @@ using Unity.Collections.LowLevel.Unsafe;
 using DS5W;
 using UnityEngine.InputSystem.HID;
 using UnityEngine.InputSystem.Layouts;
+using UniSense.NewConnections;
 public class NewBehaviourScript : MonoBehaviour
 {
-    DualSense dualSense;
-    DualSenseHIDOutputReport CurrentCommand = new DualSenseHIDOutputReport();
+    NewDualSense dualSense;
+  //  DualSenseHIDOutputReport CurrentCommand = new DualSenseHIDOutputReport();
     public DualSenseTrigger trigger;
     [Range(0f, 1f)]
     public float force;
@@ -27,14 +28,14 @@ public class NewBehaviourScript : MonoBehaviour
 
 
     public bool connected = true;
-    bool thing = true;
+    //bool thing = true;
     DeviceContext deviceContext;
     DS5W_RetrunValue DevcieStatus;
     public void Start()
     {
 
-
-        dualSense = GetComponent<DualSense>();
+        NewUniSenseConnectionHandler.Initilize(new UniqueIdentifier(gameObject, this));
+        dualSense = GetComponent<NewDualSense>();
 
         // int deviceid = DualSenseUSBGamepadHID.FindFirst().deviceId;
         // static extern HID.HIDDeviceDescriptor ReadHIDDeviceDescriptor(deviceid, ref InputDeviceDescription deviceDescription, IInputRuntime runtime)

@@ -7,13 +7,13 @@ using UnityEngine.InputSystem.DualShock;
 using UnityEngine.InputSystem.Layouts;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
-
+using UnityEngine.InputSystem.DualSense;
 namespace UniSense
 {
 
 	[InputControlLayout(
 		stateType = typeof(DualSenseBTHIDInputReport),
-		displayName = "PS5 Controller")]
+		displayName = "Blue Tooth PS5 Controller")]
 	[Preserve]
 #if UNITY_EDITOR
 	[InitializeOnLoad]
@@ -23,7 +23,7 @@ namespace UniSense
 	//It uses unity inbuilt input InputDevice.ExecuteCommand<TCommand> method in combination with 
 	//the custom device command "language" DualSenseHIDOutputReport.
 
-	public class DualSenseBTGamepadHID : DualShockGamepad
+	public class DualSenseBTGamepadHID : UnisenseDualSenseGamepad
 	{
 		private DualSenseBTHIDOutputReport CurrentCommand = DualSenseBTHIDOutputReport.Create();
 		public ButtonControl leftTriggerButton { get; protected set; }
@@ -87,13 +87,13 @@ namespace UniSense
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 		static void Initialize()
 		{
-			InputSystem.RegisterLayout<DualSenseBTGamepadHID>(
-				matches: new InputDeviceMatcher()
-				.WithInterface("HID")
-                .WithManufacturer("Sony.+Entertainment")
-                .WithCapability("vendorId", 0x54C)
-                .WithCapability("inputReportSize", 78)
-                .WithCapability("productId", 0xCE6));
+			//InputSystem.RegisterLayout<DualSenseBTGamepadHID>(
+			//	matches: new InputDeviceMatcher()
+			//	.WithInterface("HID")
+   //             .WithManufacturer("Sony.+Entertainment")
+   //             .WithCapability("vendorId", 0x54C)
+   //             .WithCapability("inputReportSize", 78)
+   //             .WithCapability("productId", 0xCE6));
 
 			
 
@@ -146,7 +146,7 @@ namespace UniSense
 		public void ResetMotorSpeeds() => SetMotorSpeeds(0f, 0f);
 
 		public void ResetLightBarColor() => SetLightBarColor(Color.black);
-
+		
 		public void ResetTriggersState()
 		{
 			var EmptyState = new DualSenseTriggerState
@@ -168,6 +168,7 @@ namespace UniSense
 			ResetHaptics();
 			ResetMotorSpeeds();
 			ResetLightBarColor();
+			
 			ResetTriggersState();
 			SendCommand();
 		}

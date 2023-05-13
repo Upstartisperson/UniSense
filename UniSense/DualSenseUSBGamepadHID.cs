@@ -7,13 +7,14 @@ using UnityEngine.InputSystem.DualShock;
 using UnityEngine.InputSystem.Layouts;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
-
+using UnityEngine.InputSystem.DualSense;
 namespace UniSense
 {
 
 	[InputControlLayout(
 		stateType = typeof(DualSenseUSBHIDInputReport),
-		displayName = "PS5 Controller")]
+		displayName = "USB PS5 Controller",
+		variants = "USB, BT")]
 	[Preserve]
 #if UNITY_EDITOR
 	[InitializeOnLoad]
@@ -23,7 +24,7 @@ namespace UniSense
 	//It uses unity inbuilt input InputDevice.ExecuteCommand<TCommand> method in combination with 
 	//the custom device command "language" DualSenseHIDOutputReport.
 
-	public class DualSenseUSBGamepadHID : DualShockGamepad
+	public class DualSenseUSBGamepadHID :  UnisenseDualSenseGamepad
 	{
 		private DualSenseHIDOutputReport CurrentCommand = DualSenseHIDOutputReport.Create();
 		public ButtonControl leftTriggerButton { get; protected set; }
@@ -38,6 +39,7 @@ namespace UniSense
 		static DualSenseUSBGamepadHID()
 		{
 			Initialize();
+			
 		}
 #endif
 
@@ -87,13 +89,24 @@ namespace UniSense
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 		static void Initialize()
 		{
-			InputSystem.RegisterLayout<DualSenseUSBGamepadHID>(
-				matches: new InputDeviceMatcher()
-				.WithInterface("HID")
-				.WithManufacturer("Sony.+Entertainment")
-				.WithCapability("vendorId", 0x54C)
-				.WithCapability("inputReportSize", 64)
-				.WithCapability("productId", 0xCE6));
+			//InputSystem.RegisterLayoutBuilder(
+			//     () =>
+			//     {
+			//         var builder = new InputControlLayout.Builder()
+			//             .WithType&lt;MyDevice&gt;();
+			//         builder.AddControl("button1").WithLayout("Button");
+			//         return builder.Build();
+			//     }, "MyCustomLayout"
+			// }
+
+
+			//InputSystem.RegisterLayout<DualSenseUSBGamepadHID>(
+			//	matches: new InputDeviceMatcher()
+			//	.WithInterface("HID")
+			//	.WithManufacturer("Sony.+Entertainment")
+			//	.WithCapability("vendorId", 0x54C)
+			//	.WithCapability("inputReportSize", 64)
+			//	.WithCapability("productId", 0xCE6));
 
 
 
@@ -146,7 +159,7 @@ namespace UniSense
 		public void ResetMotorSpeeds() => SetMotorSpeeds(0f, 0f);
 
 		public void ResetLightBarColor() => SetLightBarColor(Color.black);
-
+		
 		public void ResetTriggersState()
 		{
 			var EmptyState = new DualSenseTriggerState
@@ -168,6 +181,7 @@ namespace UniSense
 			ResetHaptics();
 			ResetMotorSpeeds();
 			ResetLightBarColor();
+			
 			ResetTriggersState();
 			SendCommand();
 		}
