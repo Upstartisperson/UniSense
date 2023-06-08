@@ -2,7 +2,7 @@
   "name": "com.nullkal.unisense",
   "displayName": "Input System-UniSense",
   "version": "0.1.0",
-  "unity": "2019.1",
+  "unity": "2021.3",
   "description": "This plugin enables Unity apps to use DualSense in Windows OS, the controller for PlayStation 5.",
   "keywords": [
     "Gamepad",
@@ -13,7 +13,8 @@
   ],
   "category": "Plugins",
   "dependencies": {
-    "com.unity.inputsystem": "1.0.1"
+    "com.unity.inputsystem": "1.4.4"
+    
   },
   "license": "MIT",
   "homepage": "https://github.com/nullkal/UniSense#readme",
