@@ -8,6 +8,7 @@ using UnityEngine.InputSystem.Layouts;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 using UnityEngine.InputSystem.DualSense;
+using DS5W;
 namespace UniSense
 {
 
@@ -15,9 +16,6 @@ namespace UniSense
 		stateType = typeof(DualSenseBTHIDInputReport),
 		displayName = "Blue Tooth PS5 Controller")]
 	[Preserve]
-#if UNITY_EDITOR
-	[InitializeOnLoad]
-#endif
 	//This Script is responsible for sending haptic signals to the connected DualSense controller.
 
 	//It uses unity inbuilt input InputDevice.ExecuteCommand<TCommand> method in combination with 
@@ -26,20 +24,7 @@ namespace UniSense
 	public class DualSenseBTGamepadHID : UnisenseDualSenseGamepad
 	{
 		private DualSenseBTHIDOutputReport CurrentCommand = DualSenseBTHIDOutputReport.Create();
-		public ButtonControl leftTriggerButton { get; protected set; }
-		public ButtonControl rightTriggerButton { get; protected set; }
-		public ButtonControl playStationButton { get; protected set; }
-		public ButtonControl micMuteButton { get; protected set; }
 
-
-
-
-#if UNITY_EDITOR
-		static DualSenseBTGamepadHID()
-		{
-			Initialize();
-		}
-#endif
 
 		/// <summary>
 		/// Finds all the connected DualSense controllers or <c>null</c> if 
@@ -82,35 +67,21 @@ namespace UniSense
 		/// <returns>A DualSenseGamepadHID instance or <c>null</c>.</returns>
 		public static DualSenseBTGamepadHID FindCurrent() => Gamepad.current as DualSenseBTGamepadHID;
 
-		
 
-		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-		static void Initialize()
-		{
-			//InputSystem.RegisterLayout<DualSenseBTGamepadHID>(
-			//	matches: new InputDeviceMatcher()
-			//	.WithInterface("HID")
-   //             .WithManufacturer("Sony.+Entertainment")
-   //             .WithCapability("vendorId", 0x54C)
-   //             .WithCapability("inputReportSize", 78)
-   //             .WithCapability("productId", 0xCE6));
 
-			
-
+        protected override void OnAdded()
+        {	
+			base.OnAdded();
+			InputSystem.DisableDevice(this);
 
 		}
 
-		protected override void FinishSetup()
+        protected override void FinishSetup()
 		{
-			leftTriggerButton = GetChildControl<ButtonControl>("leftTriggerButton");
-			rightTriggerButton = GetChildControl<ButtonControl>("rightTriggerButton");
-			playStationButton = GetChildControl<ButtonControl>("systemButton");
-			micMuteButton = GetChildControl<ButtonControl>("micMuteButton");
+            base.FinishSetup();
+        }
 
-			base.FinishSetup();
-		}
-
-		private bool MotorHasValue => m_LowFrequencyMotorSpeed.HasValue || m_HighFrequenceyMotorSpeed.HasValue;
+        private bool MotorHasValue => m_LowFrequencyMotorSpeed.HasValue || m_HighFrequenceyMotorSpeed.HasValue;
 		private bool LeftTriggerHasValue => m_leftTriggerState.HasValue;
 		private bool RightTriggerHasValue => m_rightTriggerState.HasValue;
 

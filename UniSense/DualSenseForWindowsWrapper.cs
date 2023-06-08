@@ -13,31 +13,28 @@ namespace DS5W
     public static class DS5W_x64
     {
         public const string _DLLpath = "C:\\Users\\thom3\\source\\repos\\DualSense-WindowsDLLBuild\\VS19_Solution\\bin\\DualSenseWindows\\DebugDll-x64\\ds5w_x64.dll";
-        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int Addnumbers(int a, int b);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_RetrunValue enumDevices(ref IntPtr ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true);
+        public static extern DS5W_ReturnValue enumDevices(ref IntPtr ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_RetrunValue enumDevicesArray(ref DeviceEnumInfo ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true);
+        public static extern DS5W_ReturnValue initDeviceContext(ref DeviceEnumInfo ptrEnumInfo, ref DeviceContext ptrContext);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_RetrunValue initDeviceContext(ref DeviceEnumInfo ptrEnumInfo, ref DeviceContext ptrContext);
+        public static extern void freeDeviceContext(ref DeviceContext ptrContext, bool clearOutput);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void freeDeviceContext(ref DeviceContext ptrContext);
+        public static extern DS5W_ReturnValue reconnectDevice(ref DeviceContext ptrContext);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_RetrunValue reconnectDevice(ref DeviceContext ptrContext);
+        public static extern DS5W_ReturnValue setDeviceRawOutputState(ref DeviceContext ptrContext, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] ptrOutputByteMap, int size);
 
-        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_RetrunValue setDeviceRawOutputState(ref DeviceContext ptrContext, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] ptrOutputByteMap, int size);
+        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl,CharSet = CharSet.Unicode)]
+        public static extern DS5W_ReturnValue findDevice(ref DeviceEnumInfo ptrEnumInfo, string serialNumber);
 
-        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_RetrunValue SetSerialNumber(ref DeviceEnumInfo ptrEnumInfo, [MarshalAs(UnmanagedType.LPWStr, SizeConst = 260)] string serialNumber);
-           
-
+        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)] //Try charset here I did it wron and never tested it
+        public static extern DS5W_ReturnValue ReturnSerial(ref IntPtr ptrBuffer, string serialNumber);
+         
     }
 
     /// <summary>
@@ -47,26 +44,25 @@ namespace DS5W
     {
         public const string _DLLpath = "C:\\Users\\thom3\\source\\repos\\DualSense-WindowsDLLBuild\\VS19_Solution\\bin\\DualSenseWindows\\DebugDll-x86\\ds5w_x86.dll";
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int Addnumbers(int a, int b);
+        public static extern DS5W_ReturnValue enumDevices(ref IntPtr ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_RetrunValue enumDevices(ref IntPtr ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true);
+        public static extern DS5W_ReturnValue initDeviceContext(ref DeviceEnumInfo ptrEnumInfo, ref DeviceContext ptrContext);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_RetrunValue enumDevicesArray(ref DeviceEnumInfo ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true);
+        public static extern void freeDeviceContext(ref DeviceContext ptrContext, bool clearOutput);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_RetrunValue initDeviceContext(ref DeviceEnumInfo ptrEnumInfo, ref DeviceContext ptrContext);
+        public static extern DS5W_ReturnValue reconnectDevice(ref DeviceContext ptrContext);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void freeDeviceContext(ref DeviceContext ptrContext);
+        public static extern DS5W_ReturnValue setDeviceRawOutputState(ref DeviceContext ptrContext, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] ptrOutputByteMap, int size);
+        
+        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern DS5W_ReturnValue findDevice(ref DeviceEnumInfo ptrEnumInfo, string serialNumber);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_RetrunValue reconnectDevice(ref DeviceContext ptrContext);
-
-        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_RetrunValue setDeviceRawOutputState(ref DeviceContext ptrContext, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] ptrOutputByteMap, int size);
-
+        public static extern DS5W_ReturnValue ReturnSerial(ref DeviceEnumInfo ptrEnumInfo, ref SerialNumber serialNumber);
     }
     public class DS5WHelpers
     {
@@ -103,17 +99,26 @@ namespace DS5W
 
 
     }
-   
 
 
 
 
-    
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct SerialNumber
+    {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct InternalData
+        {
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string serialNumber;
+        }
+        public InternalData _internal;
+    }
 
     /// <summary>
     /// Struct for the status of a device or related functions
     /// </summary>
-    public enum DS5W_RetrunValue : uint
+    public enum DS5W_ReturnValue : uint
     {
         OK = 0,
         /// <summary>

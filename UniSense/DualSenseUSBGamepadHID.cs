@@ -16,9 +16,6 @@ namespace UniSense
 		displayName = "USB PS5 Controller",
 		variants = "USB, BT")]
 	[Preserve]
-#if UNITY_EDITOR
-	[InitializeOnLoad]
-#endif
 	//This Script is responsible for sending haptic signals to the connected DualSense controller.
 
 	//It uses unity inbuilt input InputDevice.ExecuteCommand<TCommand> method in combination with 
@@ -27,21 +24,7 @@ namespace UniSense
 	public class DualSenseUSBGamepadHID :  UnisenseDualSenseGamepad
 	{
 		private DualSenseHIDOutputReport CurrentCommand = DualSenseHIDOutputReport.Create();
-		public ButtonControl leftTriggerButton { get; protected set; }
-		public ButtonControl rightTriggerButton { get; protected set; }
-		public ButtonControl playStationButton { get; protected set; }
-		public ButtonControl micMuteButton { get; protected set; }
 
-
-
-
-#if UNITY_EDITOR
-		static DualSenseUSBGamepadHID()
-		{
-			Initialize();
-			
-		}
-#endif
 
 		/// <summary>
 		/// Finds all the connected DualSense controllers or <c>null</c> if 
@@ -84,42 +67,8 @@ namespace UniSense
 		/// <returns>A DualSenseGamepadHID instance or <c>null</c>.</returns>
 		public static DualSenseUSBGamepadHID FindCurrent() => Gamepad.current as DualSenseUSBGamepadHID;
 
-
-
-		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-		static void Initialize()
-		{
-			//InputSystem.RegisterLayoutBuilder(
-			//     () =>
-			//     {
-			//         var builder = new InputControlLayout.Builder()
-			//             .WithType&lt;MyDevice&gt;();
-			//         builder.AddControl("button1").WithLayout("Button");
-			//         return builder.Build();
-			//     }, "MyCustomLayout"
-			// }
-
-
-			//InputSystem.RegisterLayout<DualSenseUSBGamepadHID>(
-			//	matches: new InputDeviceMatcher()
-			//	.WithInterface("HID")
-			//	.WithManufacturer("Sony.+Entertainment")
-			//	.WithCapability("vendorId", 0x54C)
-			//	.WithCapability("inputReportSize", 64)
-			//	.WithCapability("productId", 0xCE6));
-
-
-
-
-		}
-
 		protected override void FinishSetup()
 		{
-			leftTriggerButton = GetChildControl<ButtonControl>("leftTriggerButton");
-			rightTriggerButton = GetChildControl<ButtonControl>("rightTriggerButton");
-			playStationButton = GetChildControl<ButtonControl>("systemButton");
-			micMuteButton = GetChildControl<ButtonControl>("micMuteButton");
-
 			base.FinishSetup();
 		}
 

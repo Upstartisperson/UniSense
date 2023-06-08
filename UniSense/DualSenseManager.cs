@@ -9,325 +9,437 @@ using UnityEngine.InputSystem.LowLevel;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UniSense.NewConnections;
-using DS5W;
-using UnityEngine.Events;
-using UnityEngine.UI;
+using UniSense.DevConnections;
+
+#region Custom Data Structures
+//TODO: Could potentially have a static system for the players so I would add a player like Player.Add(). Would update a static internal player list. This is definitely something to consider
+//I Just need to plan it out and see if it would be easier to do it like this, probably but just have to try it out I guess.
+//TODO: Add reconnection capability
+//TODO: Add ways to listen to what this script is doing 
+//TODO: Achieve feature parody with PlayerInputManager
+//TODO: Find way to update the split screen 
+//TODO: Add editor script and achieve feature parody with Player Input Manager
+//TODO: Find new solution for _playersToReconnect queue since relaiontship can be broken;
+public class Player
+{
+    public string Name { get; private set; }
+    private ref UniSenseUser user { get { return ref NewUniSenseConnectionHandler.UnisenseUsers[_unisenseId]; } }
+    private Rect CameraRect { get { return playerInput.camera.rect; } set { playerInput.camera.rect = value; } }
+    private GameObject gameObject;
+    private PlayerInput playerInput { get { return gameObject.GetComponent<PlayerInput>(); } }
+    private IHandleSingleplayer singlePlayerHandler;
+    private int _unisenseId;
+    private static List<Player> _players;
+    private static Queue<int> _playersToReconnect;
+    private static bool _initialized = false;
+
+    private static int _nextUniqueId = 0;
+    public int uniqueId { get; private set; }
+    public bool UserConnected { get; private set; }
+    //Maybe add a playerIndex int here don't know if needed
+    public Player(int unisenseId, GameObject gameObject, IHandleSingleplayer singlePlayerHandeler, string name = null)
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        this.Name = name;
+        this.gameObject = gameObject;
+        this._unisenseId = unisenseId;
+        this.singlePlayerHandler = singlePlayerHandeler;
+        singlePlayerHandeler.OnCurrentUserChanged(unisenseId);
+        UserConnected = true;
+        uniqueId = _nextUniqueId++; //Assign _nextUniqueId to _uniqueId then increment the value of _nextUniqueId
+    }
+
+    public static void Initialize(ref List<Player> players, ref Queue<int> playersToReconnect)
+    {
+        _players = players;
+        _initialized = true;
+        _playersToReconnect = playersToReconnect;
+    }
+
+    public void SetSplitScreen(int splitScreenIndex, int screenCount, SplitScreenBlueprint screenBlueprint, Rect screenRectangle)
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        screenBlueprint.Recover();
+        Rect rect = screenBlueprint.rects[screenCount -1][splitScreenIndex];
+        rect = new Rect(
+                                  x: ((rect.position.x + .5f - (0.5f * rect.width )) * screenRectangle.width ) + (screenRectangle.x),
+                                  y: ((rect.position.y + .5f - (0.5f * rect.height)) * screenRectangle.height) + (screenRectangle.y),
+                                  width : rect.size.x * screenRectangle.width,
+                                  height: rect.size.y * screenRectangle.height
+                                  );
+        CameraRect = rect;
+    }
+
+    public static bool FindPlayerWithUnisenseId(int unisenseId,  out int playerIndex)
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        for (playerIndex = 0; playerIndex < _players.Count; playerIndex++)
+       {
+            if(_players[playerIndex]._unisenseId == unisenseId) return true;
+       }
+       return false;
+    }
+
+    public static bool FindPlayerWithUniqueId(int uniqueId, out int playerIndex)
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        for (playerIndex = 0; playerIndex < _players.Count; playerIndex++)
+        {
+            if (_players[playerIndex].uniqueId == uniqueId) return true; 
+        }
+        return false;
+    }
 
 
-//TODO: FIXME usb controller not clearing output on game quit
+    /// <summary>
+    /// Reconnect an existing player to a new user
+    /// </summary>
+    /// <returns></returns>
+    public bool ReConnect(int unisenseId) //Can be called from on user added but also manually
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        singlePlayerHandler.OnCurrentUserChanged(unisenseId); //This should compltly handle even choosing what device is acitve and pairing the player input
+        UserConnected = true;
+        _unisenseId = unisenseId;
+        return false;
+    }
+
+
+    /// <summary>
+    /// Empties the player for when a controller disconnects but doesn't delete it so it can be reconnected later
+    /// </summary>
+    /// <returns></returns>
+    public bool OnDisconnect() //call it in OnUserRemoved just have to update the single player handler
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        //TODO: Verify
+        //In UnisenseUser.Clear() all values are reset to default meaning nothing should need to be done
+        if (!UserConnected) return true;
+        if (_unisenseId == -1) return false;
+        singlePlayerHandler.OnNoCurrentUser();
+        UserConnected = false;
+        _unisenseId = -1;
+        _playersToReconnect.Enqueue(this.uniqueId);
+        return true;
+    }
+
+    /// <summary>
+    /// Empties the player for when a controller disconnects but doesn't delete it so it can be reconnected later
+    /// </summary>
+    /// <returns></returns>
+    public bool InitiateDisconnect() //call it to manually disconnect a user
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        if (!UserConnected) return true;
+        if (_unisenseId == -1) return false;
+        user.SetActiveDevice(UniSense.DevConnections.DeviceType.None);
+        user.UnPairPlayerInput();
+        singlePlayerHandler.OnNoCurrentUser();
+        UserConnected = false;
+        _unisenseId = -1;
+        _playersToReconnect.Enqueue(this.uniqueId);
+        return true;
+    }
+
+    /// <summary>
+    /// Will call the UserChanged part of IHandelSingleplayer and set the internal _unisenseId
+    /// </summary>
+    /// <param name="unisenseId"></param>
+    /// <returns></returns>
+    public bool ChangeUser(int unisenseId)
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        if (_unisenseId == -1) return false;
+        singlePlayerHandler.OnCurrentUserChanged(unisenseId);
+        _unisenseId = unisenseId;
+        return true;
+    }
+
+
+    /// <summary>
+    /// Will Call the usermodifed part of IHandelSinglePlayer
+    /// </summary>
+    /// <returns></returns>
+    public bool ModifyUser(UserChange change)
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        if (_unisenseId == -1) return false;
+        singlePlayerHandler.OnCurrentUserModified(change);
+        return true;
+    }
+    /// <summary>
+    /// Deletes the player
+    /// </summary>
+    /// <returns></returns>
+    private void Delete()
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        //needs to communicate with player input manager to set the correct splitscreen 
+        //Just going to try deleting the whole prefab
+        if (UserConnected)
+        {
+            user.SetActiveDevice(UniSense.DevConnections.DeviceType.None);
+            user.UnPairPlayerInput();
+        }
+        GameObject.Destroy(gameObject); //Needs more then just this
+    }
+
+
+    public static void DestroyAt(int playerIdnex)
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        _players[playerIdnex].Delete();
+        _players.RemoveAt(playerIdnex);
+    }
+    public static void Destroy(int uniqueId)
+    {
+        if (!_initialized) Debug.LogError("Not Initialized");
+        for (int i = 0; i < _players.Count; i++)
+        {
+            if (_players[i].uniqueId == uniqueId) { DestroyAt(i); return; }
+        }
+    }
+
+}
+
+#endregion
+
+
+
+
+
+
 
 [DisallowMultipleComponent]
-public class DualSenseManager : MonoBehaviour
+public class DualSenseManager : MonoBehaviour, IHandleMultiplayer
 {
-    public class Player
-    {
-        
-        public string Name;
-        public string Key;
-        public Controller Controller;
-        public GameObject GameObject;
-        public PlayerInput PlayerInput;
-        public NewDualSense DualSense;
-        public ControllerType ControllerType
-        {
-            get { return Controller.ControllerType; }
-        }
-        public ControllerConnectionStatus ConnectionStatus
-        {
-            get { return Controller.connectionStatus; }
-        }
-        public int PlayerIndex;
 
-        public Player(ref Controller controller, GameObject gameObject, int playerIndex, string name = null)
-        {
-            Key = controller.key;
-            this.Controller = controller;
-            this.GameObject = gameObject;
-            PlayerInput = gameObject.GetComponent<PlayerInput>();
-            DualSense = gameObject.GetComponent<NewDualSense>();
-            this.DualSense.CurrentController = controller;
-            PlayerIndex = playerIndex;
-            Name = name;
-        }
-
-        public void UpdatePlayer(ref Controller controller)
-        {
-            Controller = null;
-            Controller = controller;
-            this.DualSense.CurrentController = controller;
-            Key = controller.key;
-        }
-        public void DisconnectPlayer()
-        {
-            //InputSystem.RemoveDevice(Controller.devices.InputDevice);
-            PlayerInput.user.UnpairDevices();
-            //PlayerInput.user.UnpairDevice(Controller.devices.InputDevice);
-            Controller = null;
-            Controller = new Controller();
-            this.DualSense.CurrentController = Controller;
-            Key = string.Empty;
-            
-        }
-    }
-    [Range(0, 16)]
-    public int MaxNumberOfPlayers = 0;
-
-
-    public enum PlayerNameType
-    {
-        GenerateNames,
-        List,
-    }
-   
-    public PlayerNameType NamingType;
-    public string PlayerBaseName = "Player";
-    public List<string> PlayerNames = new List<string>();
-    public List<Player> PlayerList = new List<Player>();
-	public enum PlayerJoinBehavior
-    {
-       JoinPlayersWhenButtonIsPressed,
-       JoinPlayersWhenJoinActionIsTriggered,
-       JoinPlayersManually,
-       JoinPlayersAutomatically
-    }
-    public PlayerJoinBehavior playerJoinBehavior;
+    #region Fields
+    public InputActionProperty JoinAction;
+    public InputActionProperty LeaveAction;
+    [Tooltip("Keep Players If Device Is Lost")]
+    public bool PersistPlayers;
     public GameObject PlayerPrefab;
-    public bool AllowKeyBoardMouse;
-    public bool AllowGenericGamepad;
-    public bool AutoRemoveDisconnecected;
-    public InputActionProperty joinAction;
-    private int MaxPlayers = -1;
-    public Transform SpawnPoint;
+    public int MaxPlayers = 4;
     private bool _splitScreen;
-    private int _playerCount => PlayerList.Count; 
-    public static DualSenseManager instance {  get; private set; }
-    private List<int> emptyPlayers = new();
-
-    [SerializeField] InputAction Joinaction2;
-    public void Awake()
-    {
-        if (instance != null)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        instance = this;
-        PlayerInputManager.instance.EnableJoining();
-        PlayerInputManager.instance.playerPrefab = PlayerPrefab;
-        MaxPlayers = PlayerInputManager.instance.maxPlayerCount;
-        _splitScreen = PlayerInputManager.instance.splitScreen;
-        ConnectionHandelerStatus status = NewUniSenseConnectionHandler.Initilize(new UniqueIdentifier(gameObject, this), true);
-        NewUniSenseConnectionHandler.OnControllerChange += OnControllerChange;
-        if(status != ConnectionHandelerStatus.Ok)
-        {
-            Debug.LogError(status.ToString());
-            return;
-        }
-
-        if (playerJoinBehavior == PlayerJoinBehavior.JoinPlayersWhenJoinActionIsTriggered)
-        {
-            Joinaction2.Enable();
-            Joinaction2.performed += OnJoinAction;
-            //joinAction.action.Enable();
-            //joinAction.action.performed += context => OnJoinAction(context);
-            return;
-        }
-        for (int i = 0; i < _controllers.Length; i++ )
-        {
-            ref Controller controller = ref _controllers[i];
-            if (controller.ReadyToConnect)
-            {
-                AddNewPlayer(ref controller, GetName(_playerCount));
-            }
-        }
-       
-    }
+    public List<Player> PlayerList = new();
+    public Transform SpawnPoint;
+    [Header("Split-Screen")]
+    public bool EnableSplitScreen;
+    public SplitScreenBlueprint screenBlueprint;
+    public bool SetFixedNumber;
+    public int NumberOfScreens; 
+    public Rect ScreenRectangle = new Rect { x = 0, y = 0, height = 1, width = 1 };
+    /// <summary>
+    /// Stores the unique Id of the players that are awaiting a reconnection
+    /// </summary>
+    public Queue<int> PlayersToReconnect = new Queue<int>();
     
-    public event Action<int> PlayerJoined;
-    public event Action<int> PlayerLeft;
-    public event Action<int> PlayerRemoved;
-    public event Action<int> PlayerReconnected;
-   
-    public void OnJoinAction(InputAction.CallbackContext context)
+    public static DualSenseManager instance { get; private set; }
+    #endregion
+
+    #region Initialization
+    public void Start()
+    {
+        if (instance == null)
+        {
+            instance = this;
+            if(PlayerInputManager.instance == null)
+            {
+                Debug.LogError("No player input manager found");
+                return;
+            }
+
+            NewUniSenseConnectionHandler.InitializeMultiplayer(this);
+
+            PlayerInputManager.instance.EnableJoining();
+            PlayerInputManager.instance.playerPrefab = PlayerPrefab;
+            //MaxPlayers = PlayerInputManager.instance.maxPlayerCount;
+            _splitScreen = PlayerInputManager.instance.splitScreen;
+            JoinAction.action.Enable();
+            JoinAction.action.performed += OnJoinAction;
+            LeaveAction.action.Enable();
+            LeaveAction.action.performed += OnLeaveAction;
+            Player.Initialize(ref PlayerList, ref PlayersToReconnect);
+            return;
+           
+        }
+        Destroy(this);
+        
+    }
+
+
+
+    #endregion
+
+    #region Methods
+
+    private void OnLeaveAction(InputAction.CallbackContext context)
     {
         InputDevice device = context.control.device;
         ControllerType controllerType = ControllerType.GenericGamepad;
         if (device is DualSenseUSBGamepadHID) controllerType = ControllerType.DualSenseUSB;
         else if (device is DualSenseBTGamepadHID) controllerType = ControllerType.DualSenseBT;
         string key;
+        int unisenseId = -1;
+        int playerindex = 0;
         switch (controllerType)
         {
             case ControllerType.DualSenseBT:
                 key = device.description.serial.ToString();
-                if (NewUniSenseConnectionHandler.ControllerLookup.ContainsKey(key))
+                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
                 {
-                    int unisenseID = NewUniSenseConnectionHandler.ControllerLookup[key];
-                    if (FindPlayer(key) != -1) return; 
-                    OnControllerChangeimpl(unisenseID, ControllerChange.Added, key);
-                    
+                    if (!Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
+                    RemovePlayer(playerindex);
                 }
                 break;
             case ControllerType.DualSenseUSB:
                 key = device.deviceId.ToString();
-                if (NewUniSenseConnectionHandler.ControllerLookup.ContainsKey(key))
+                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
                 {
-                    int unisenseID = NewUniSenseConnectionHandler.ControllerLookup[key];
-                    if (FindPlayer(key) != -1) return;
-                    OnControllerChangeimpl(unisenseID, ControllerChange.Added, key);
-
+                    if (!Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
+                    RemovePlayer(playerindex);
                 }
                 break;
             case ControllerType.GenericGamepad:
                 key = device.deviceId.ToString();
-                if (NewUniSenseConnectionHandler.ControllerLookup.ContainsKey(key))
+                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
                 {
-                    int unisenseID = NewUniSenseConnectionHandler.ControllerLookup[key];
-                    if (FindPlayer(key) != -1) return;
-                    OnControllerChangeimpl(unisenseID, ControllerChange.Added, key);
-
+                    if (!Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
+                    RemovePlayer(playerindex);
                 }
                 break;
         }
     }
 
-    private int FindPlayer(string key)
+    public void OnDestroy()
     {
-        for (int i = 0; i< PlayerList.Count; i++)
+        JoinAction.action.performed += OnJoinAction;
+        LeaveAction.action.performed -= OnLeaveAction;
+    }
+
+    private void OnJoinAction(InputAction.CallbackContext context)
+    {
+        InputDevice device = context.control.device;
+        ControllerType controllerType = ControllerType.GenericGamepad;
+        if (device is DualSenseUSBGamepadHID) controllerType = ControllerType.DualSenseUSB;
+        else if (device is DualSenseBTGamepadHID) controllerType = ControllerType.DualSenseBT;
+        string key;
+        int unisenseId = -1;
+        int playerindex = 0;
+        switch (controllerType)
         {
-            if (PlayerList[i].Key == key)
+            case ControllerType.DualSenseBT:
+                key = device.description.serial.ToString();
+                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
+                {
+                    if (Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
+                    if (PersistPlayers && AttemptReconnect(unisenseId)) return;
+                    AddPlayer(unisenseId, "nameeeee");
+                }
+                break;
+            case ControllerType.DualSenseUSB:
+                key = device.deviceId.ToString();
+                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
+                {
+                    if (Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
+                    if (PersistPlayers && AttemptReconnect(unisenseId)) return;
+                    AddPlayer(unisenseId, "nameeeee");
+                }
+                break;
+            case ControllerType.GenericGamepad:
+                key = device.deviceId.ToString();
+                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
+                {
+                    if (Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
+                    if (PersistPlayers && AttemptReconnect(unisenseId)) return;
+                    AddPlayer(unisenseId, "nameeeee");
+                }
+                break;
+        }
+    }
+
+    public void InitilizeUsers() //Don't need it right now will for auto but needs to call it after devivce are matched in NewUnisenseConnectionHandler
+    {
+        Debug.Log("Initialize users");
+    }
+
+    public void OnUserAdded(int uniSenseId)
+    {
+        Debug.Log("user added");
+    }
+
+    public void OnUserModified(int uniSenseId, UserChange change)
+    {
+        if (Player.FindPlayerWithUnisenseId(uniSenseId, out int playerIndex)) 
+        { 
+          PlayerList[playerIndex].ModifyUser(change);
+            
+        }
+    }
+
+    public void OnUserRemoved(int uniSenseId)
+    {
+        if (Player.FindPlayerWithUnisenseId(uniSenseId, out int playerIndex))
+        {
+            if (PersistPlayers)
             {
-                return i;
+                PlayerList[playerIndex].OnDisconnect();
             }
-        }
-        return -1;
-    }
-    private void OnControllerChange(int unisenseID, ControllerChange change, string key)
-    {
-        if(playerJoinBehavior == PlayerJoinBehavior.JoinPlayersAutomatically || change == ControllerChange.Removed)
-        {
-            OnControllerChangeimpl(unisenseID, change, key);
-        }
-       
-    }
-
-    private void OnControllerChangeimpl(int UnisenseID, ControllerChange change, string key) 
-    {
-        switch (change)
-        {
-            case ControllerChange.Added:
-                if (emptyPlayers.Count != 0)
-                {
-                    ReconnectPlayer(ref _controllers[UnisenseID], emptyPlayers[0]);
-                    emptyPlayers.RemoveAt(0);
-                    return;
-                }
-                AddNewPlayer(ref _controllers[UnisenseID], GetName(_playerCount));
-                break;
-            case ControllerChange.Removed:
-                if (key == null) return;
-                for (int i = 0; i < PlayerList.Count; i++)
-                {
-                    if (PlayerList[i].Key == key)
-                    {
-                        PlayerList[i].DisconnectPlayer();
-                        emptyPlayers.Add(i);
-                    }
-                }
-                break;
+            else RemovePlayer(uniSenseId);
+            //if (EnableSplitScreen) UpdateSplitScreen();
         }
     }
-    private string GetName(int playerIndex)
+
+
+    #endregion
+
+    #region Helper Methods
+    public void AddPlayer(int uniSenseId, string name)
     {
-        switch (NamingType)
-        {
-            case PlayerNameType.GenerateNames:
-                return PlayerBaseName + playerIndex.ToString();
-                break;
+        //TODO: currently how I find IHandleSinglePlayer leaves something to be desired
 
-            case PlayerNameType.List:
-                if (playerIndex < PlayerNames.Count)
-                {
-                    return PlayerNames[playerIndex].ToString();
-                }
-                return PlayerBaseName + playerIndex.ToString();
-                break;
-        }
-        return null;
-    }
-
-    private ref Controller[] _controllers { get { return ref NewUniSenseConnectionHandler.Controllers; } }
-
-    public void Disable()
-    {
-
-    }
-
-    public void Enable()
-    {
-
-    }
-
-    public void OnDisable()
-    {
-        NewUniSenseConnectionHandler.OnControllerChange -= OnControllerChange;
-        Joinaction2.performed -= OnJoinAction;
-        NewUniSenseConnectionHandler.Destroy(new UniqueIdentifier(gameObject, this));
-        
-        // joinAction.action.performed -= OnJoinAction;
-        //joinAction.action.Disable();
-        //joinAction.action.Dispose();
-        
-    }
-
-
-
-    
-
-
-
-    [SerializeField]
-    public bool Gamepad
-    {
-        get { return AllowGenericGamepad; }
-        set { if (Application.isPlaying) return; AllowGenericGamepad = value; }
-    }
-
-    public void AddNewPlayer(ref Controller controller, string name)
-    {
-        int splitScreenIndex = -1;
-        //if (_splitScreen) splitScreenIndex = _playerCount;
-        InputDevice[] devices = new InputDevice[1] {controller.devices.InputDevice};
-
-
-
-        GameObject _gameObject = PlayerInputManager.instance.JoinPlayer(playerIndex: _playerCount, splitScreenIndex: splitScreenIndex,  pairWithDevices: devices).gameObject;
+        GameObject _gameObject = PlayerInputManager.instance.JoinPlayer().gameObject;
         _gameObject.transform.SetPositionAndRotation(SpawnPoint.position, SpawnPoint.rotation);
-        Player player = new Player(ref controller, _gameObject, _playerCount, name);
-        player.GameObject.name = name;
-        NewUniSenseConnectionHandler.ConnectController(ref controller, new UniqueIdentifier(gameObject, this));
-        player.DualSense.CurrentController = controller;
-        PlayerList.Add(player);
+        IHandleSingleplayer singlePlayerHandler = _gameObject.GetComponent<IHandleSingleplayer>();
+        if (singlePlayerHandler == null) { Debug.LogError("Failed to add player"); return; } 
+        PlayerList.Add(new Player(uniSenseId, _gameObject, singlePlayerHandler, name));
+        if(EnableSplitScreen) UpdateSplitScreen();
     }
 
-    public void RemovePlayer(int playerIndex)
+    public void RemovePlayer(int playerIndex) 
     {
-       PlayerList[playerIndex].DisconnectPlayer();
+        Player.DestroyAt(playerIndex);
+        UpdateSplitScreen();
     }
 
-    public void ReconnectPlayer(ref Controller controller, int playerIndex)
+    public bool AttemptReconnect(int unisenseId)
     {
-        InputDevice[] devices = new InputDevice[1] {controller.devices.InputDevice};
-        PlayerList[playerIndex].PlayerInput.SwitchCurrentControlScheme(devices);
-        NewUniSenseConnectionHandler.ConnectController(ref controller, new UniqueIdentifier(gameObject, this));
-        PlayerList[playerIndex].UpdatePlayer(ref controller);
+        if (PlayersToReconnect.Count == 0) return false;
+        if (Player.FindPlayerWithUniqueId(PlayersToReconnect.Dequeue(), out int playerIndex))
+        {
+            if (!PlayerList[playerIndex].ReConnect(unisenseId)) return true;
+        }
+        Debug.LogError("Failed To Reconnect");
+        return false;
+    }   
+
+    public void UpdateSplitScreen()
+    {
+        for (int i = 0; i < PlayerList.Count; i++)
+        {
+            PlayerList[i].SetSplitScreen(i, (SetFixedNumber) ? NumberOfScreens : PlayerList.Count, screenBlueprint, ScreenRectangle);
+        }
     }
 
-    public void DissconnectPlayer(Player player)
+    public void UpdatePlayerNumbers() //Might just outright remove
     {
-        
+        throw new NotImplementedException();
     }
 
     
-	
+    #endregion
+
+
 
 }

@@ -63,6 +63,8 @@ namespace UniSense.LowLevel
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 3 + BTOffset)] public byte lowFrequencyMotorSpeed;
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 4 + BTOffset)] public byte highFrequencyMotorSpeed;
 
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 8 + BTOffset)] public byte speaker;
+
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 9 + BTOffset)] public InternalMicLedState micLedState;
 
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 11 + BTOffset)] public byte rightTriggerMode;
@@ -239,6 +241,7 @@ namespace UniSense.LowLevel
             {
                 baseCommand = new InputDeviceCommand(Type, kSize),
                 reportId = kReportId,
+                speaker = 0x20,
             };
         }
     }

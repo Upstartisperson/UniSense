@@ -80,13 +80,20 @@ namespace UniSense.LowLevel
         [FieldOffset(24)] public short accelY;
         [FieldOffset(26)] public short accelZ;
 
-        [InputControl(name = "batteryCharging", layout = "Button", displayName = "Battery is Charging", bit = 3)]
-        [FieldOffset(54)]
-        public byte batteryInfo1;
+        [InputControl(name = "powerConnected", layout = "Button", displayName = "Battery is Charging", bit = 5)]
+        [InputControl(name = "usbConnected", layout = "Button", displayName = "USB Plugged In", bit = 3)]
+        [FieldOffset(54)] public byte usbStatus;
+
+        [InputControl(name = "usbConnectionActive", layout = "Button", displayName = "USB Connection Active", bit = 5)]
+        [FieldOffset(53)] public byte usbConnectionStatus;
 
         [InputControl(name = "batteryFullyCharged", layout = "Button", displayName = "Battery is Fully Charged", bit = 5)]
-        [InputControl(name = "batteryLevel", layout = "Axis", format = "BIT", displayName = "Battery Level", bit = 0, sizeInBits = 4, parameters = "normalize,normalizeMin=0,normalizeMax=1")]
         [FieldOffset(55)]
         public byte batteryInfo2;
+
+        [InputControl(name = "batteryLevel", layout = "Integer", format = "BIT", displayName = "Battery Level", bit = 0, sizeInBits = 4)]
+        [FieldOffset(53)] public uint batteryLevel;
+
+
     }
 }

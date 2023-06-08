@@ -10,19 +10,20 @@ using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using DS5W;
 using UniSense.NewConnections;
-
-public class NewDualSense : MonoBehaviour
+//TODO: Move get byte array out of here
+public class DepreciatedDualSense : MonoBehaviour
 {
-
+	//depreciate
 	
 
     private void Start()
     {
 		if (!GetComponent<PlayerInput>().neverAutoSwitchControlSchemes) Debug.LogError("Disable 'Auto-Switch' on Player Input");
-		if (DualSenseManager.instance != null) return;
-		NewUniSenseConnectionHandler.Initilize(uniqueIdentifier: new UniqueIdentifier(gameObject, this));
-		NewUniSenseConnectionHandler.OnCurrentControllerUpdated += UpadateCurrentController;
-		_currentController = NewUniSenseConnectionHandler.CurrentController;
+		if (DepreciatedDualSenseManager.instance != null) return;
+		UniSenseConnectionHandler.Initilize(uniqueIdentifier: new UniqueIdentifier(gameObject, this));
+		UniSenseConnectionHandler.OnCurrentControllerUpdated += UpadateCurrentController;
+		_currentController = UniSenseConnectionHandler.CurrentController;
+		
 		_isManaged = false;
 	}
 
@@ -31,7 +32,7 @@ public class NewDualSense : MonoBehaviour
     private void OnDisable()
     {
 		if (_isManaged) return;
- 		NewUniSenseConnectionHandler.Destroy(new UniqueIdentifier(gameObject, this));
+ 		UniSenseConnectionHandler.Destroy(new UniqueIdentifier(gameObject, this));
     }
 
     private void UpadateCurrentController(Controller controller)
@@ -41,8 +42,9 @@ public class NewDualSense : MonoBehaviour
 
 
 
-    #region Variables
-  
+	#region Variables
+
+	//public QuickControls QuickControlss;
 	private OS_Type oS;
 	private Controller _currentController = new Controller();
 	public Controller CurrentController { get { return _currentController; } set { _currentController = value; }  }
@@ -76,6 +78,7 @@ public class NewDualSense : MonoBehaviour
 		CurrentCommand.ResetMotorSpeeds();
 		CurrentCommand.SetLeftTriggerState(new DualSenseTriggerState());
 		CurrentCommand.SetRightTriggerState(new DualSenseTriggerState());
+		//InputSystem.onEvent
 		SendCommand();
 	}
 	public void SetLightBarColor(Color color) => CurrentCommand.SetLightBarColor(color);
@@ -84,26 +87,12 @@ public class NewDualSense : MonoBehaviour
 
 	public void ResetLightBarColor() => SetLightBarColor(Color.black);
 
+	public void SetMicLEDState(DualSenseMicLedState micLedState) => CurrentCommand.SetMicLedState(micLedState);
 	public void ResetLEDs() => CurrentCommand.DisableLightBarAndPlayerLed();
 
 	public void SetPlayerLED(PlayerLedBrightness brightness, PlayerLED playerLED, bool fade = false) => CurrentCommand.SetPlayerLedState(new PlayerLedState((byte)playerLED, fade), brightness);
 
-
-
-	public void Reset()
-	{
-		if (controllerConnected)
-		{
-			Debug.LogError("No Controller Connected");
-			return;
-		}
-		ResetHaptics();
-		ResetMotorSpeeds();
-		ResetLEDs();
-		ResetTriggersState();
-		SendCommand();
-
-	}
+	
 	public void ResetTriggersState()
 	{
 		var EmptyState = new DualSenseTriggerState
@@ -126,26 +115,31 @@ public class NewDualSense : MonoBehaviour
 	}
 
 
-
-	public void SendCommand() //intended to be called by the local component attached to the player
-	{
 	
 
+	public  void SendCommand() //intended to be called by the local component attached to the player
+	{
+
+		
 		if (_currentController == null) return;
 		if (_currentController.connectionStatus == ControllerConnectionStatus.Disconected) return;
+		
 		switch (_currentController.ControllerType)
 		{
 			case ControllerType.DualSenseBT:
-
+				Debug.Log(_currentController.devices.DualsenseBT.batteryLevel.ReadValue());
 				byte[] rawDeviceCommand = GetRawCommand(CurrentCommand);
-				DS5W_RetrunValue status = (oS == OS_Type._x64) ? DS5W_x64.setDeviceRawOutputState(ref _currentController.devices.contextBT, rawDeviceCommand, rawDeviceCommand.Length) :
+				DS5W_ReturnValue status = (oS == OS_Type._x64) ? DS5W_x64.setDeviceRawOutputState(ref _currentController.devices.contextBT, rawDeviceCommand, rawDeviceCommand.Length) :
 																 DS5W_x86.setDeviceRawOutputState(ref _currentController.devices.contextBT, rawDeviceCommand, rawDeviceCommand.Length);
-				if (status != DS5W_RetrunValue.OK) Debug.LogError(status.ToString());
+				if (status != DS5W_ReturnValue.OK) Debug.LogError(status.ToString());
 				break;
 
 			case ControllerType.DualSenseUSB:
+				byte[] mybytes = new byte[4];
+				Debug.Log(_currentController.devices.DualsenseUSB.batteryLevel.ReadValue());
 
-				_currentController.devices.DualsenseUSB?.ExecuteCommand(ref CurrentCommand);
+			
+                _currentController.devices.DualsenseUSB?.ExecuteCommand(ref CurrentCommand);
 				break;
 			case ControllerType.GenericGamepad:
 				Debug.LogError("Not DualSense Controller");

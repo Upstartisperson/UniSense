@@ -1,42 +1,40 @@
 using UnityEngine.InputSystem.Layouts;
-using UnityEngine.InputSystem;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using UnityEngine.InputSystem.Controls;
-using UnityEngine.InputSystem.Layouts;
-using UnityEngine.InputSystem.LowLevel;
-using UnityEngine.InputSystem.DualShock.LowLevel;
-using UnityEngine.InputSystem.Utilities;
-using UnityEngine.InputSystem.DualShock;
-using UnityEngine.InputSystem;
-using UnityEngine.Scripting;
-using UniSense.LowLevel;
 using UnityEditor;
-using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Controls;
-using UnityEngine.InputSystem.DualShock;
-using UnityEngine.InputSystem.Layouts;
+using System;
 using UnityEngine.Scripting;
-using System.Collections.Generic;
-using UniSense.LowLevel;
+
+
+
+
+
+
 using UniSense;
 namespace UnityEngine.InputSystem.DualSense
 {
-
+    [Preserve]
 #if UNITY_EDITOR
     [InitializeOnLoad]
 #endif
+    [ExecuteInEditMode]
     public static class DualSenseSupport
     {
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        public static void Initialize()
+        [SerializeReference] internal static bool _initiliezed = false;
+        #if UNITY_EDITOR
+        static DualSenseSupport()
         {
+            if (_initiliezed) return;
+            Initialize();
+        }
+        #endif
+        
+        [RuntimeInitializeOnLoadMethod(loadType: RuntimeInitializeLoadType.SubsystemRegistration)]
+        public static void Initialize()
+        { 
+            if(_initiliezed) return ;
+            _initiliezed=true;
+            InputSystem.RegisterProcessor<InvertBytesKeepBits>();
+
+
             InputSystem.RegisterLayout<UnisenseDualSenseGamepad>();
 
             InputSystem.RegisterLayout<DualSenseUSBGamepadHID>(
@@ -53,6 +51,17 @@ namespace UnityEngine.InputSystem.DualSense
                 .WithCapability("vendorId", 0x54C)
                 .WithCapability("inputReportSize", 78)
                 .WithCapability("productId", 0xCE6));
+        }
+    }
+
+    
+    public class InvertBytesKeepBits : InputProcessor<uint>
+    {
+        public override uint Process(uint value, InputControl control)
+        {
+            byte[] bytes =  BitConverter.GetBytes(value);
+            Array.Reverse(bytes);
+            return BitConverter.ToUInt32(bytes, 0);
         }
     }
 }

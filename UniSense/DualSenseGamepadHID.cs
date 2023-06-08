@@ -18,9 +18,6 @@ using UnityEngine.Scripting;
 using UniSense.LowLevel;
 namespace UnityEngine.InputSystem.DualSense
 {
-
-
-
     /// <summary>
     /// A Sony DualShock/DualSense controller.
     /// </summary>
@@ -70,54 +67,77 @@ namespace UnityEngine.InputSystem.DualSense
         /// Control representing the charging status of the DualSense controller
         /// </summary>
         /// <value>Is pressed when controller is plugged in</value>
-        [InputControl(name = "batteryCharging", displayName = "Battery Charging", shortDisplayName = "Charging")]
-        public ButtonControl batteryCharging { get; private set; }
-       
-        //TODO:See if I can fix the battery status
+        [InputControl(name = "powerConnected", displayName = "Power Connected", shortDisplayName = "Powered")]
+        public ButtonControl powerConnected { get; private set; }
+
+        /// <summary>
+        /// Button representing if a the controller is plugged into a USB host
+        /// </summary>
+        /// <value>Is pressed when controller is plugged into a USB host</value>
+        [InputControl(name = "usbConnected", displayName = "USB Connected", shortDisplayName = "Connected")]
+        public ButtonControl usbConnected { get; private set; }
+
+        /// <summary>
+        ///Button representing the USB connection status of the controller 
+        /// </summary>
+        /// <value>Is pressed when the controller is actively connected to a USB device</value>
+        [InputControl(name = "usbConnectionActive", displayName = "USB Active", shortDisplayName = "Active")]
+        public ButtonControl usbConnectionActive { get; private set; }
+
         /// <summary>
         /// Control representing if the controller is fully charged
         /// </summary>
-        /// <value>Is broken will always not be pressed</value>
+        /// <value>0-1</value>
         [InputControl(name = "batteryFullyCharged", displayName = "Battery Fully Charged", shortDisplayName = "Fully Charged")]
         public ButtonControl batteryFullyCharged { get; private set; }
 
         /// <summary>
-        /// Control representing the charge status of the controller
+        /// Control representing the battery status of the controller
         /// </summary>
-        /// <value>Is broken will always not be pressed</value>
+        /// <value>0-10</value>
         [InputControl(name = "batteryLevel", displayName = "Battery Level", shortDisplayName = "Battery Level")]
-        public AxisControl batteryLevl { get; private set; }
+        public IntegerControl batteryLevel { get; private set; }
        
         public new static UnisenseDualSenseGamepad current { get; private set; }
 
-            /// <inheritdoc />
-            public override void MakeCurrent()
-            {
-                base.MakeCurrent();
-                current = this;
-            }
+        /// <inheritdoc />
+        public override void MakeCurrent()
+        {
+            base.MakeCurrent();
+            current = this;
+        }
 
-            /// <inheritdoc />
-            protected override void OnRemoved()
-            {
-                base.OnRemoved();
-                if (current == this)
-                    current = null;
-            }
+        /// <inheritdoc />
+        protected override void OnRemoved()
+        {
+            base.OnRemoved();
+            if (current == this)
+                current = null;
+        }
 
-            /// <inheritdoc />
-            protected override void FinishSetup()
-            {
-                base.FinishSetup();
-            }
+        /// <inheritdoc/>
+        protected override void FinishSetup()
+        {
+            leftTriggerButton = GetChildControl<ButtonControl>("leftTriggerButton");
+            rightTriggerButton = GetChildControl<ButtonControl>("rightTriggerButton");
+            systemButton = GetChildControl<ButtonControl>("systemButton");
+            micMuteButton = GetChildControl<ButtonControl>("micMuteButton");
+            angularVelocity = GetChildControl<Vector3Control>("gyro");
+            acceleration = GetChildControl<Vector3Control>("accel");
+            usbConnectionActive = GetChildControl<ButtonControl>("usbConnectionActive");
+            usbConnected = GetChildControl<ButtonControl>("usbConnected");
+            powerConnected = GetChildControl<ButtonControl>("powerConnected");
+            batteryFullyCharged = GetChildControl<ButtonControl>("batteryFullyCharged");
+            batteryLevel = GetChildControl<IntegerControl>("batteryLevel");
+            base.FinishSetup();
+        }
 
-            /// <inheritdoc />
-            public virtual void SetLightBarColor(Color color)
-            {
-            }
+        /// <inheritdoc />
+        public virtual void SetLightBarColor(Color color)
+        {
+        }
     }
     
-
 
 }
 
