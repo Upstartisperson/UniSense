@@ -8,7 +8,20 @@ using UnityEngine.InputSystem.Layouts;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 using UnityEngine.InputSystem.DualSense;
+using UnityEngine.InputSystem.LowLevel;
+using System.Runtime.InteropServices;
 
+using UniSense;
+
+using UnityEngine.InputSystem.Utilities;
+
+using System;
+
+using System.Linq;
+
+using Unity.Collections.LowLevel.Unsafe;
+
+using System.Text;
 namespace UniSense
 {
 	//TODO: Add proper documentation
@@ -22,10 +35,11 @@ namespace UniSense
 	//It uses unity inbuilt input InputDevice.ExecuteCommand<TCommand> method in combination with 
 	//the custom device command "language" DualSenseHIDOutputReport.
 
-	public class DualSenseBTGamepadHID : UnisenseDualSenseGamepad
+	public class DualSenseBTGamepadHID : UnisenseDualSenseGamepad, IInputUpdateCallbackReceiver
 	{
 		private DualSenseBTHIDOutputReport CurrentCommand = DualSenseBTHIDOutputReport.Create();
 
+		private bool _limtedReport;
 
 		/// <summary>
 		/// Finds all the connected DualSense controllers or <c>null</c> if 
@@ -74,8 +88,11 @@ namespace UniSense
         {	
 			base.OnAdded();
 			InputSystem.DisableDevice(this);
-
+			
 		}
+
+        
+
 
         protected override void FinishSetup()
 		{
@@ -213,8 +230,13 @@ namespace UniSense
 			ExecuteCommand(ref command);
 		}
 
+        public void OnUpdate()
+        {
+			
+				
+        }
 
-		private float? m_LowFrequencyMotorSpeed;
+        private float? m_LowFrequencyMotorSpeed;
 		private float? m_HighFrequenceyMotorSpeed;
 		private DualSenseTriggerState? m_rightTriggerState;
 		private DualSenseTriggerState? m_leftTriggerState;

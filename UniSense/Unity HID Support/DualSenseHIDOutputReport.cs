@@ -8,7 +8,7 @@ namespace UniSense.LowLevel
 {
    
     [StructLayout(LayoutKind.Explicit, Size = kSize)]
-    internal unsafe struct DualSenseHIDOutputReport : IInputDeviceCommandInfo
+    public unsafe struct DualSenseHIDOutputReport : IInputDeviceCommandInfo
     {
         public static FourCC Type => new FourCC('H', 'I', 'D', 'O');
 
@@ -18,7 +18,7 @@ namespace UniSense.LowLevel
         internal const int kReportId = 2;
 
         [Flags]
-        internal enum Flags1 : byte
+        public enum Flags1 : byte
         {
             MainMotors1 = 0x01,
             MainMotors2 = 0x02,
@@ -27,14 +27,14 @@ namespace UniSense.LowLevel
         }
 
         [Flags]
-        internal enum Flags2 : byte
+        public enum Flags2 : byte
         {
             MicLed = 0x01,
             SetLightBarColor = 0x04,
             PlayerLed = 0x10,
         }
 
-        internal enum InternalMicLedState : byte
+        public enum InternalMicLedState : byte
         {
             Off = 0x00,
             On = 0x01,
@@ -42,13 +42,13 @@ namespace UniSense.LowLevel
         }
 
         [Flags]
-        internal enum LedFlags : byte
+        public enum LedFlags : byte
         {
             PlayerLedBrightness = 0x01,
             LightBarFade = 0x02,
         }
 
-        internal enum InternalPlayerLedBrightness : byte
+        public enum InternalPlayerLedBrightness : byte
         {
             High = 0x0,
             Medium = 0x1,

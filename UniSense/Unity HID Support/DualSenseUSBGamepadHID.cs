@@ -3,18 +3,31 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
-using UnityEngine.InputSystem.DualShock;
+using UnityEngine.InputSystem.DualShock.LowLevel;
 using UnityEngine.InputSystem.Layouts;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 using UnityEngine.InputSystem.DualSense;
+using UnityEngine.InputSystem.LowLevel;
+using System.Runtime.InteropServices;
+
+using UniSense;
+
+using UnityEngine.InputSystem.Utilities;
+
+using System;
+
+using System.Linq;
+
+using Unity.Collections.LowLevel.Unsafe;
+
+using System.Text;
 namespace UniSense
 {
 
 	[InputControlLayout(
 		stateType = typeof(DualSenseUSBHIDInputReport),
-		displayName = "USB PS5 Controller",
-		variants = "USB, BT")]
+		displayName = "USB PS5 Controller")]
 	[Preserve]
 	//This Script is responsible for sending haptic signals to the connected DualSense controller.
 
@@ -25,7 +38,7 @@ namespace UniSense
 	{
 		private DualSenseHIDOutputReport CurrentCommand = DualSenseHIDOutputReport.Create();
 
-
+		private Gamepad GenericGamepad;
 		/// <summary>
 		/// Finds all the connected DualSense controllers or <c>null</c> if 
 		/// there is no one connected to the system.
@@ -70,8 +83,14 @@ namespace UniSense
 		protected override void FinishSetup()
 		{
 			base.FinishSetup();
+			
 		}
 
+        protected override void OnAdded()
+        {
+            base.OnAdded();
+			GenericGamepad = InputSystem.AddDevice<Gamepad>();
+		}
 		private bool MotorHasValue => m_LowFrequencyMotorSpeed.HasValue || m_HighFrequenceyMotorSpeed.HasValue;
 		private bool LeftTriggerHasValue => m_leftTriggerState.HasValue;
 		private bool RightTriggerHasValue => m_rightTriggerState.HasValue;
@@ -204,6 +223,7 @@ namespace UniSense
 			ExecuteCommand(ref command);
 		}
 
+      
 
 		private float? m_LowFrequencyMotorSpeed;
 		private float? m_HighFrequenceyMotorSpeed;

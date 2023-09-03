@@ -2,7 +2,7 @@ using UnityEngine.InputSystem.Layouts;
 using UnityEditor;
 using System;
 using UnityEngine.Scripting;
-
+using UnityEngine.InputSystem;
 
 
 
@@ -51,7 +51,18 @@ namespace UnityEngine.InputSystem.DualSense
                 .WithCapability("vendorId", 0x54C)
                 .WithCapability("inputReportSize", 78)
                 .WithCapability("productId", 0xCE6));
+
+            //InputSystem.RegisterLayoutOverride(@"
+            //{
+            //    ""name"" : ""GamepadPlayerUsageTags"",
+            //    ""extend"" : ""UnisenseDualSenseGamepad"",
+            //    ""commonUsages"" : [
+            //        ""Player1"", ""Player2""
+            //    ]
+            //}
+            //");
         }
+        
     }
 
     
@@ -65,3 +76,5 @@ namespace UnityEngine.InputSystem.DualSense
         }
     }
 }
+
+

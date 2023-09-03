@@ -5,7 +5,6 @@ using UnityEngine;
 namespace UniSense
 {
     //Holds a bunch of custom DataStructures for Unisense
-    //TODO: Add Most if not all custom data structures here
     public struct DualSenseGamepadState
     {
         public Color? LightBarColor;

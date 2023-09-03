@@ -9,6 +9,15 @@ namespace UniSense.LowLevel
     internal struct DualSenseBTHIDInputReport : IInputStateTypeInfo
     {
         public FourCC format => new FourCC('H', 'I', 'D');
+
+        public class Variants
+        {
+            public const string LimitedReport = "Gamepad";
+            public const string FullReport = "Joystick";
+            public const string DPadAxes = "DpadAxes";
+            public const string DPadButtons = "DpadButtons";
+        }
+
         static int BToffset = 1;
         [FieldOffset(1)] public byte reportId;
 
