@@ -3,7 +3,8 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
-
+using UnityEngine;
+using System.IO;
 
 namespace DS5W
 {
@@ -12,8 +13,9 @@ namespace DS5W
     /// </summary>
     public static class DS5W_x64
     {
-        public const string _DLLpath = "C:\\Users\\thom3\\source\\repos\\DualSense-WindowsDLLBuild\\VS19_Solution\\bin\\DualSenseWindows\\DebugDll-x64\\ds5w_x64.dll";
-
+#if UNITY_EDITOR
+        public const string _DLLpath = "ds5w_x64.dll";
+        #endif
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
         public static extern DS5W_ReturnValue enumDevices(ref IntPtr ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true);
 
