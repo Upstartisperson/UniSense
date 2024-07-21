@@ -8,7 +8,7 @@ using System.Linq;
 using UnityEngine.InputSystem.LowLevel;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
-using UniSense.NewConnections;
+//using UniSense.NewConnections;
 using UniSense.DevConnections;
 
 #region Custom Data Structures
@@ -20,6 +20,13 @@ using UniSense.DevConnections;
 //TODO: Find way to update the split screen 
 //TODO: Add editor script and achieve feature parody with Player Input Manager
 //TODO: Find new solution for _playersToReconnect queue since relaiontship can be broken;
+
+public enum ControllerType
+{
+    DualSenseBT,
+    DualSenseUSB,
+    GenericGamepad
+}
 public class Player
 {
     public string Name { get; private set; }
