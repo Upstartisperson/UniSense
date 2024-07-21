@@ -562,21 +562,20 @@ namespace UniSense.DevConnections {
 		}
 
 		
-
-
 		private static void OnPlayModeStateChanged(PlayModeStateChange stateChange)
         {
           if(stateChange == PlayModeStateChange.ExitingPlayMode) Destroy();
         }
 
-		/// <summary>
-		/// Initialize unisense in single player mode
-		/// </summary>
-		/// <param name="singleplayerListener"></param>
-		/// <param name="allowKeyboardMouse"></param>
-		/// <param name="allowGenergicGamepad"></param>
-		/// <returns>True if successful</returns>
-		public static bool InitializeSingleplayer(IHandleSingleplayer singleplayerListener, bool allowKeyboardMouse = false, bool allowGenergicGamepad = false)
+        #region Initialization
+        /// <summary>
+        /// Initialize unisense in single player mode
+        /// </summary>
+        /// <param name="singleplayerListener"></param>
+        /// <param name="allowKeyboardMouse"></param>
+        /// <param name="allowGenergicGamepad"></param>
+        /// <returns>True if successful</returns>
+        public static bool InitializeSingleplayer(IHandleSingleplayer singleplayerListener, bool allowKeyboardMouse = false, bool allowGenergicGamepad = false)
         {
             if (IsInitialized || singleplayerListener == null) return false;
 			IsInitialized = true;
@@ -599,7 +598,6 @@ namespace UniSense.DevConnections {
 			_handleMultiplayer = multiplayerListener;
 			return FinishInitialization(true, allowKeyboardMouse, allowGenergicGamepad, maxPlayers);
 		}
-
 
 
 		private static bool FinishInitialization(bool isMultiplayer, bool allowKeyboardMouse, bool allowGenergicGamepad, int maxPlayers)
@@ -672,6 +670,8 @@ namespace UniSense.DevConnections {
 			return true;
 		}
 
+        #endregion
+
         private static void InputSystemUpdate()
         {
 			if(DevicesToEnable.TryDequeue(out InputDevice device)) InputSystem.EnableDevice(device);
@@ -741,7 +741,6 @@ namespace UniSense.DevConnections {
                 }
             }
         }
-
 
         private static void OnDeviceChange(InputDevice device, InputDeviceChange change)
         {
@@ -943,14 +942,15 @@ namespace UniSense.DevConnections {
 			return true; //when called by EditorApplication.wantsToQuit returning true allows the application to exit
 		}
 
-		#region Helper Methods
-	
-		/// <summary>
-		/// Enumerate dualSense devices on the DS5W side
-		/// </summary>
-		/// <param name="infos"></param>
-		/// <param name="Arraysize"></param>
-		private static void DS5WEnumDevices(ref DeviceEnumInfo[] infos, int Arraysize)
+        #region Helper Methods
+
+        #region DS5W Stuff
+        /// <summary>
+        /// Enumerate dualSense devices on the DS5W side
+        /// </summary>
+        /// <param name="infos"></param>
+        /// <param name="Arraysize"></param>
+        private static void DS5WEnumDevices(ref DeviceEnumInfo[] infos, int Arraysize)
 		{
 			uint discoveredDeviceCount = 0;
 			IntPtr ptrDeviceEnum = IntPtr.Zero;
@@ -980,8 +980,9 @@ namespace UniSense.DevConnections {
 				}
 			}
 		}
+        #endregion
 
-		public static bool RemoveCurrentUser()
+        public static bool RemoveCurrentUser()
         {
 			if(_currentUserIndex != -1) CurrentUser.ClearUser(false);
 			if (!FindNewCurrentUser(out int unisenseId)) return false;
@@ -1115,10 +1116,6 @@ namespace UniSense.DevConnections {
 		private static Queue<InputDevice> DevicesToEnable = new Queue<InputDevice>();
 		
 
-	 
-
-		
-
 		//TODO: Fix this so users are initialized after the USB is matched
 		//Necessitates a change to MatchDevices
 		private static void InitializeOnNextInputUpdate()
@@ -1140,6 +1137,7 @@ namespace UniSense.DevConnections {
 			_initializationQueued = false;
 
         }
+
 		private static void QueueDeviceMatch()
 		{
 			if (_deviceMatchQueued) return;
@@ -1264,6 +1262,7 @@ namespace UniSense.DevConnections {
 			EditorApplication.wantsToQuit += Destroy;
 			InputSystem.onDeviceChange += OnDeviceChange;
 		}
+
 		#endregion
 
 	}

@@ -1,0 +1,2 @@
+Check unity for connected game controllers
+	All found controllers will be placed in a connection queue the connection queue will be updated at the beginning of each input system update
