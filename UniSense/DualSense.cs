@@ -9,7 +9,10 @@ using UnityEngine.InputSystem.LowLevel;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using WrapperDS5W;
-using UniSense.DevConnections;
+using UniSense.Management;
+using UniSense.Users;
+using UniSense.Utilities;
+using DeviceType = UniSense.Utilities.DeviceType;
 
 //TODO: Finish this
 //TODO: There Was a bug that I can't replicate anymore. when bt dissconeted and usb was attached when two players were instatnatied with the manager,
@@ -20,21 +23,19 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
     public bool AllowKeyboardMouse;
     public bool AllowGenericController;
 	private bool _isManaged;
-	private OS_Type _osType;
-    private ref OldUniSenseUser _currentuser
+	private int _initTimer = 0;
+	
+    private ref UniSenseUser _currentUser
     {
-        get { return ref OldUniSenseConnectionHandler.UnisenseUsers[_currentUserIndex]; }
+        get { return ref UniSenseUser.Users[_currentUserIndex]; }
     }
 
-	public DualSense()
-    {
-		_osType = (IntPtr.Size == 4) ? OS_Type._x86 : OS_Type._x64;
-	}
 
 
-    #region SinglePlayer
 
-    public void Start()
+	#region SinglePlayer
+
+	public void Start()
     {
 		
 		if (DualSenseManager.instance != null) //If DualSenseManager exists in the scene then let DualSenseManager handle initialization
@@ -42,49 +43,65 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 			_isManaged = true;
 			return;
         }
-        if (OldUniSenseConnectionHandler.IsInitialized) return;
-        if (OldUniSenseConnectionHandler.InitializeSingleplayer(this, AllowKeyboardMouse, AllowGenericController))
-        {
-            Debug.Log("Initialization successful");
-        }
-        else
-        {
-            Debug.LogError("Initialization failed");
-            return;
-        }
-    }
-    public void InitilizeUsers(int unisenseId)
-    {
-		
-        Debug.Log("Initialization started");
-		if (unisenseId == -1) return;
-		_currentUserIndex = unisenseId;
-		_currentuser.PairWithPlayerInput(GetComponent<PlayerInput>());
-		if(_currentuser.BTAttached) _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseBT);
-		if (_currentuser.USBAttached) _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.GenericGamepad);
+        if (UniSenseConnectionHandler.IsInitialized) return;
+		QueueInit();
     }
 
-    public void OnCurrentUserChanged(int unisenseId)
+    private void OnDestroy()
     {
-		Debug.Log("Current User Changed From: " + _currentUserIndex + "To: " + unisenseId);
+		if (_initTimer < 50 && _initTimer > 0) InputSystem.onAfterUpdate -= QueueInit;
+    }
+
+    private void QueueInit()
+    {
+		if (_initTimer++ == 0) InputSystem.onAfterUpdate += QueueInit;
+		if(_initTimer > 50)
+        {
+			InputSystem.onAfterUpdate -= QueueInit;
+			if (UniSenseConnectionHandler.InitializeSingleplayer(this, AllowKeyboardMouse, AllowGenericController))
+			{
+				Debug.Log("Initialization successful");
+			}
+			else
+			{
+				Debug.LogError("Initialization failed");
+				return;
+			}
+		}
+		
+    }
+  //  public void InitilizeUsers(int unisenseId) //Deemed obsolete
+  //  {
+		
+  //      Debug.Log("Initialization started");
+		//if (unisenseId == -1) return;
+		//_currentUserIndex = unisenseId;
+		//_currentUser.PairWithPlayerInput(GetComponent<PlayerInput>());
+		//if(_currentUser.BTAttached) _currentUser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseBT);
+		//if (_currentUser.USBAttached) _currentUser.SetActiveDevice(UniSense.DevConnections.DeviceType.GenericGamepad);
+  //  }
+
+    public void SetCurrentUser_S(int unisenseId)
+    {
+		Debug.Log("Current User Changed From: " + _currentUserIndex + "To: " + unisenseId); //TODO: Remove Debug Log
 		if(_currentUserIndex != -1)
         {
-			_currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.None);
-			_currentuser.UnPairPlayerInput();
-
+			_currentUser.SetActiveDevice(DeviceType.None);
+			_currentUser.UnPairPlayerInput();
 		}
 		_currentUserIndex = unisenseId;
-		_currentuser.PairWithPlayerInput(GetComponent<PlayerInput>());
-		if (_currentuser.USBAttached && _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseUSB)) return;
+		_currentUser.PairWithPlayerInput(GetComponent<PlayerInput>());
+		
+		if (_currentUser.USBAttached && _currentUser.SetActiveDevice(DeviceType.DualSenseUSB)) return;
+		else Debug.LogError("USB Failed To Connect");
 
-		//if (!_currentuser.DontOpenWirelessConnection && _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseBT)) return; //Updated version below DontOpenWirelessConnection deemed obsolete. If the BT device reports an active USB device but no device is found just continue as normal with BT.
-		if (_currentuser.BTAttached && _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseBT)) return;
+		if (_currentUser.BTAttached && _currentUser.SetActiveDevice(DeviceType.DualSenseBT)) return;
+		else Debug.LogError("BT Failed To Connect");
 
-		if (_currentuser.GenericAttached && _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.GenericGamepad)) return;
+		if (_currentUser.GenericAttached && _currentUser.SetActiveDevice(DeviceType.GenericGamepad)) return;
+		else Debug.LogError("Generic Failed To Connect");
 
-		//if(!NewUniSenseConnectionHandler.RemoveCurrentUser()) Debug.LogError("Attempt to connect failed. Failed to remove current user");
-
-    }
+	}
 
 
 
@@ -97,37 +114,23 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 				Debug.LogError("BT should never be added in OnCurrentUserModified"); //Because a BT can't be paired to USB, USB has to be paired to a BT
                 break;
             case UserChange.BTRemoved: //Should only be called when there is an active USB connection
-				if (!_currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseUSB)) Debug.LogError("Can't set USB active");
-                break;
-            case UserChange.BTDisabled:
-                _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.None);
-				Invoke("QueueBTRemoval", 2);
+				if (!_currentUser.SetActiveDevice(DeviceType.DualSenseUSB)) Debug.LogError("Can't set USB active");
                 break;
             case UserChange.USBAdded:
-				if(IsInvoking("QueueBTRemoval")) CancelInvoke("QueueBTRemoval");
-				if (!_currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseUSB)) Debug.LogError("Can't set USB active");
+				if (!_currentUser.SetActiveDevice(DeviceType.DualSenseUSB)) Debug.LogError("Can't set USB active");
 				break;
             case UserChange.USBRemoved:
-				if (!_currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseBT)) Debug.LogError("Can't set BT active");
+				if (!_currentUser.SetActiveDevice(DeviceType.DualSenseBT)) Debug.LogError("Can't set BT active");
 				break;
-            case UserChange.GenericAdded:
-				Debug.LogError("Generic should never be added in OnCurrentUserModified"); 
-				break;
-            case UserChange.GenericRemoved:
-				Debug.LogError("Generic should never be removed in OnCurrentUserModified");
-				break;
+          
             default:
+				Debug.LogError("Error: " + change.ToString() + "Should not be called in OnCurrentUserModified"); //TODO: Remove
                 break;
         }
 		
     }
 
-	public bool QueueBTRemoval() 
-    {
-		return OldUniSenseConnectionHandler.RemoveCurrentUser();
-    }
-
-    public void OnNoCurrentUser()
+    public void SetNoCurrentUser()
     {
        _currentUserIndex = -1;
     }
@@ -135,7 +138,7 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
     #endregion
 
     #region MultiPlayer
-    public void SetCurrentUser(int unisenseId)
+    public void SetCurrentUser_M(int unisenseId) //TODO: Is this useless?
     {
         _currentUserIndex = unisenseId;
     }
@@ -156,7 +159,7 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 
 
 
-	private bool _userConnected => _currentuser.ConnectionOpen;
+	private bool _userConnected => _currentUser.ConnectionOpen;
 
 
 
@@ -213,12 +216,11 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 		if (_currentUserIndex == -1) return;
 		if (!_userConnected) return;
 
-		switch (_currentuser.ActiveDevice)
+		switch (_currentUser.ActiveDevice)
 		{
-			case UniSense.DevConnections.DeviceType.DualSenseBT:
+			case DeviceType.DualSenseBT:
 				byte[] rawDeviceCommand = GetRawCommand(_currentCommand);
-				DS5W_ReturnValue status = (_osType == OS_Type._x64) ? DS5W_x64.setDeviceRawOutputState(ref _currentuser.Devices.contextBT, rawDeviceCommand, rawDeviceCommand.Length) :
-																      DS5W_x86.setDeviceRawOutputState(ref _currentuser.Devices.contextBT, rawDeviceCommand, rawDeviceCommand.Length);
+				DS5W_ReturnValue status = DS5W.setDeviceRawOutputState(ref _currentUser.Devices.contextBT, rawDeviceCommand, rawDeviceCommand.Length);
 				if (status != DS5W_ReturnValue.OK)
 				{
 					//if(_currentuser.USBAttached && _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseUSB))
@@ -237,10 +239,10 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 				}
                     break;
 
-			case UniSense.DevConnections.DeviceType.DualSenseUSB:
-				_currentuser.Devices.DualsenseUSB?.ExecuteCommand(ref _currentCommand);
+			case DeviceType.DualSenseUSB:
+				_currentUser.Devices.DualsenseUSB?.ExecuteCommand(ref _currentCommand);
 				break;
-			case UniSense.DevConnections.DeviceType.GenericGamepad:
+			case DeviceType.GenericGamepad: //TODO add haptic feedback for generic controllers
 				Debug.LogError("Not DualSense Controller");
 				break;
 			default:
