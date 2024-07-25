@@ -8,7 +8,7 @@ using UnityEngine.InputSystem.Layouts;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 using UnityEngine.InputSystem.DualSense;
-using DS5W;
+using WrapperDS5W;
 namespace UniSense
 {
 
@@ -16,7 +16,7 @@ namespace UniSense
 		stateType = typeof(DualSenseBTHIDInputReport),
 		displayName = "Blue Tooth PS5 Controller")]
 	[Preserve]
-	//This Script is responsible for sending haptic signals to the connected DualSense controller.
+	//This Script is responsible for sendinSg haptic signals to the connected DualSense controller.
 
 	//It uses unity inbuilt input InputDevice.ExecuteCommand<TCommand> method in combination with 
 	//the custom device command "language" DualSenseHIDOutputReport.

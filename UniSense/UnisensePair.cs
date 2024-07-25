@@ -7,7 +7,9 @@ using UniSense.DevConnections;
 using UnityEngine;
 using UniSense.LowLevel;
 using UnityEngine.InputSystem;
-using DeviceType = UniSense.DevConnections.DeviceType;
+using UniSense.Users;
+using UniSense.Utilities;
+using DeviceType = UniSense.Utilities.DeviceType;
 
 namespace UniSense.pair
 {
@@ -21,8 +23,8 @@ namespace UniSense.pair
 		private const int _fastEpsilon = 60000;
 		private const int _persistantEpsilon = 20;
 		private const decimal _timeEpsilon = 0.03m;
-		private static UniSenseUser[] _uniSenseUsers { get { return NewUniSenseConnectionHandler.UnisenseUsers; } }
-		private static List<int> unpairedBtUsers = new();
+		private static UniSenseUser[] _uniSenseUsers { get { return UniSenseUser.Users; } }
+		
 
 		private static unsafe bool GetCounters(InputDevice device, out uint fastCounter, out uint persistentCounter, out uint frameCounter)
 		{
@@ -76,12 +78,12 @@ namespace UniSense.pair
 		{
 			//List<DualSenseUSBGamepadHID> devicesToPair = _devicesToPair.ToList(); //Just use list from connection manage4r
 			//Queue<int> stillLookingForPair = new Queue<int>();
-			for (int i = 0; i < unpairedBtUsers.Count(); i++)
+			for (int i = 0; i < _uniSenseUsers.Length ; i++)
 			{
-				int unisenseID = unpairedBtUsers[i];
-				bool pairingSuccsesful = false;
-				//if (!_unisenseUsers[unisenseId].BTAttached) continue; redundant probably
-				DualSenseBTGamepadHID btDevice = _uniSenseUsers[unisenseID].Devices.DualsenseBT;
+				if (!_uniSenseUsers[i].NeedsPair) continue;
+
+				DualSenseBTGamepadHID btDevice = _uniSenseUsers[i].Devices.DualsenseBT;
+				
 				Debug.Log("Batt: " + btDevice.batteryLevel.ReadValue());
 				if (btDevice.usbConnected.isPressed)
 				{
@@ -90,7 +92,6 @@ namespace UniSense.pair
 						Debug.LogError("Error retrieving counters");
 						continue;
 					}
-
 
 					if (Math.Abs(btDevice.batteryLevel.ReadValue() - device.batteryLevel.ReadValue()) > 1) continue;
 
@@ -115,12 +116,11 @@ namespace UniSense.pair
 
 
 						//Successfully matched the USB device to it's BT counterpart
-						_uniSenseUsers[unisenseID].AddDevice(device, DeviceType.DualSenseUSB, unisenseID);
+						_uniSenseUsers[i].AddDevice(device, DeviceType.DualSenseUSB);
 
 						//_handleMultiplayer.OnUserModified(unisenseID, UserChange.USBAdded); //Removed since all it does is change the active device to USB in this situation. Since the BT device will continue to work while USB is connected it only needs to be swapped when and if the BT device is disconnected which is handled elsewhere  
 
-						pairingSuccsesful = true;
-						unpairedBtUsers.RemoveAt(i);
+						
 						return true;
 					}
 
@@ -131,8 +131,5 @@ namespace UniSense.pair
 
 
 		}
-
-		public static void ReadyForPair(int unisenseID) => unpairedBtUsers.Add(unisenseID); //TODO: Need to figure out when to actually call this method. should I do it on unisense user class? should I do it in the conection handeler instead?
-		public static void NotLookingForPair(int unisenseID) => unpairedBtUsers.Remove(unisenseID);
 	}
 }

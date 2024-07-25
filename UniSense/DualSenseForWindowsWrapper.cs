@@ -6,65 +6,128 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
-namespace DS5W
+
+namespace WrapperDS5W
 {
+
     /// <summary>
     /// Class that directly references the 64-bit version of the C++ DLL 
     /// </summary>
-    public static class DS5W_x64
+    internal static class DS5W_x64
     {
-#if UNITY_EDITOR
-        public const string _DLLpath = "ds5w_x64.dll";
+        #if UNITY_EDITOR
+        internal const string _DLLpath = "ds5w_x64.dll";
         #endif
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_ReturnValue enumDevices(ref IntPtr ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true);
+        internal static extern DS5W_ReturnValue enumDevices(ref IntPtr ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_ReturnValue initDeviceContext(ref DeviceEnumInfo ptrEnumInfo, ref DeviceContext ptrContext);
+        internal static extern DS5W_ReturnValue initDeviceContext(ref DeviceEnumInfo ptrEnumInfo, ref DeviceContext ptrContext);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void freeDeviceContext(ref DeviceContext ptrContext, bool clearOutput);
+        internal static extern void freeDeviceContext(ref DeviceContext ptrContext, bool clearOutput);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_ReturnValue reconnectDevice(ref DeviceContext ptrContext);
+        internal static extern DS5W_ReturnValue reconnectDevice(ref DeviceContext ptrContext);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_ReturnValue setDeviceRawOutputState(ref DeviceContext ptrContext, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] ptrOutputByteMap, int size);
+        internal static extern DS5W_ReturnValue setDeviceRawOutputState(ref DeviceContext ptrContext, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] ptrOutputByteMap, int size);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl,CharSet = CharSet.Unicode)]
-        public static extern DS5W_ReturnValue findDevice(ref DeviceEnumInfo ptrEnumInfo, string serialNumber);
+        internal static extern DS5W_ReturnValue findDevice(ref DeviceEnumInfo ptrEnumInfo, string serialNumber);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)] //Try charset here I did it wron and never tested it
-        public static extern DS5W_ReturnValue ReturnSerial(ref IntPtr ptrBuffer, string serialNumber);
+        internal static extern DS5W_ReturnValue ReturnSerial(ref IntPtr ptrBuffer, string serialNumber);
          
     }
 
     /// <summary>
     /// Class that directly references the 32-bit version of the C++ DLL
     /// </summary>
-    public static class DS5W_x86
+    internal static class DS5W_x86
     {
-        public const string _DLLpath = "C:\\Users\\thom3\\source\\repos\\DualSense-WindowsDLLBuild\\VS19_Solution\\bin\\DualSenseWindows\\DebugDll-x86\\ds5w_x86.dll";
+        #if UNITY_EDITOR
+        internal const string _DLLpath = "ds5w_x86.dll";
+        #endif
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_ReturnValue enumDevices(ref IntPtr ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true);
+        internal static extern DS5W_ReturnValue enumDevices(ref IntPtr ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_ReturnValue initDeviceContext(ref DeviceEnumInfo ptrEnumInfo, ref DeviceContext ptrContext);
+        internal static extern DS5W_ReturnValue initDeviceContext(ref DeviceEnumInfo ptrEnumInfo, ref DeviceContext ptrContext);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void freeDeviceContext(ref DeviceContext ptrContext, bool clearOutput);
+        internal static extern void freeDeviceContext(ref DeviceContext ptrContext, bool clearOutput);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_ReturnValue reconnectDevice(ref DeviceContext ptrContext);
+        internal static extern DS5W_ReturnValue reconnectDevice(ref DeviceContext ptrContext);
 
         [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_ReturnValue setDeviceRawOutputState(ref DeviceContext ptrContext, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] ptrOutputByteMap, int size);
+        internal static extern DS5W_ReturnValue setDeviceRawOutputState(ref DeviceContext ptrContext, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] ptrOutputByteMap, int size);
+
+        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        internal static extern DS5W_ReturnValue findDevice(ref DeviceEnumInfo ptrEnumInfo, string serialNumber);
+
+        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)] //Try charset here I did it wron and never tested it
+        internal static extern DS5W_ReturnValue ReturnSerial(ref IntPtr ptrBuffer, string serialNumber);
+    }
+
+    public static class DS5W
+    {
+        private static OS_Type _osType;
+        internal enum OS_Type
+        {
+            _x64,
+            _x86
+        }
+
+        public static DS5W_ReturnValue enumDevices(ref IntPtr ptrBuffer, uint inArrayLength, ref uint ptrLegnth, bool pointerToArray = true)
+        {
+            return (_osType == OS_Type._x64) ? DS5W_x64.enumDevices(ref ptrBuffer, inArrayLength, ref ptrLegnth, pointerToArray = true):
+                                               DS5W_x86.enumDevices(ref ptrBuffer, inArrayLength, ref ptrLegnth, pointerToArray = true);
+        }
+
+        public static DS5W_ReturnValue initDeviceContext(ref DeviceEnumInfo ptrEnumInfo, ref DeviceContext ptrContext)
+        {
+            return (_osType == OS_Type._x64) ? DS5W_x64.initDeviceContext(ref ptrEnumInfo, ref ptrContext):
+                                               DS5W_x86.initDeviceContext(ref ptrEnumInfo, ref ptrContext);
+        }
+
+        public static void freeDeviceContext(ref DeviceContext ptrContext, bool clearOutput)
+        {
+            if (_osType == OS_Type._x64) DS5W_x64.freeDeviceContext(ref ptrContext, clearOutput);
+            else DS5W_x86.freeDeviceContext(ref ptrContext, clearOutput);
+        }
+
+        public static DS5W_ReturnValue reconnectDevice(ref DeviceContext ptrContext)
+        {
+            return (_osType == OS_Type._x64) ? DS5W_x64.reconnectDevice(ref ptrContext):
+                                               DS5W_x86.reconnectDevice(ref ptrContext);
+        }
+
+        public static DS5W_ReturnValue setDeviceRawOutputState(ref DeviceContext ptrContext, byte[] ptrOutputByteMap, int size)
+        {
+            return (_osType == OS_Type._x64) ? DS5W_x64.setDeviceRawOutputState(ref ptrContext, ptrOutputByteMap, size):
+                                               DS5W_x86.setDeviceRawOutputState(ref ptrContext, ptrOutputByteMap, size);
+        }
+
+        public static DS5W_ReturnValue findDevice(ref DeviceEnumInfo ptrEnumInfo, string serialNumber)
+        {
+            return (_osType == OS_Type._x64) ? DS5W_x64.findDevice(ref ptrEnumInfo, serialNumber) :
+                                               DS5W_x86.findDevice(ref ptrEnumInfo, serialNumber);
+        }
+
+        public static DS5W_ReturnValue ReturnSerial(ref IntPtr ptrBuffer, string serialNumber)
+        {
+            return (_osType == OS_Type._x64) ? DS5W_x64.ReturnSerial(ref ptrBuffer, serialNumber) :
+                                               DS5W_x86.ReturnSerial(ref ptrBuffer, serialNumber);
+        }
+
         
-        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_ReturnValue findDevice(ref DeviceEnumInfo ptrEnumInfo, string serialNumber);
 
-        [DllImport(_DLLpath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern DS5W_ReturnValue ReturnSerial(ref DeviceEnumInfo ptrEnumInfo, ref SerialNumber serialNumber);
+        static DS5W()
+        {
+            _osType = (IntPtr.Size == 4) ? OS_Type._x86 : OS_Type._x64;
+        }
     }
     public class DS5WHelpers
     {

@@ -8,7 +8,7 @@ using System.Linq;
 using UnityEngine.InputSystem.LowLevel;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
-using DS5W;
+using WrapperDS5W;
 using UniSense.DevConnections;
 
 //TODO: Finish this
@@ -21,9 +21,9 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
     public bool AllowGenericController;
 	private bool _isManaged;
 	private OS_Type _osType;
-    private ref UniSenseUser _currentuser
+    private ref OldUniSenseUser _currentuser
     {
-        get { return ref NewUniSenseConnectionHandler.UnisenseUsers[_currentUserIndex]; }
+        get { return ref OldUniSenseConnectionHandler.UnisenseUsers[_currentUserIndex]; }
     }
 
 	public DualSense()
@@ -42,8 +42,8 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 			_isManaged = true;
 			return;
         }
-        if (NewUniSenseConnectionHandler.IsInitialized) return;
-        if (NewUniSenseConnectionHandler.InitializeSingleplayer(this, AllowKeyboardMouse, AllowGenericController))
+        if (OldUniSenseConnectionHandler.IsInitialized) return;
+        if (OldUniSenseConnectionHandler.InitializeSingleplayer(this, AllowKeyboardMouse, AllowGenericController))
         {
             Debug.Log("Initialization successful");
         }
@@ -77,7 +77,8 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 		_currentuser.PairWithPlayerInput(GetComponent<PlayerInput>());
 		if (_currentuser.USBAttached && _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseUSB)) return;
 
-		if (!_currentuser.DontOpenWirelessConnection && _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseBT)) return;
+		//if (!_currentuser.DontOpenWirelessConnection && _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseBT)) return; //Updated version below DontOpenWirelessConnection deemed obsolete. If the BT device reports an active USB device but no device is found just continue as normal with BT.
+		if (_currentuser.BTAttached && _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseBT)) return;
 
 		if (_currentuser.GenericAttached && _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.GenericGamepad)) return;
 
@@ -123,7 +124,7 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 
 	public bool QueueBTRemoval() 
     {
-		return NewUniSenseConnectionHandler.RemoveCurrentUser();
+		return OldUniSenseConnectionHandler.RemoveCurrentUser();
     }
 
     public void OnNoCurrentUser()

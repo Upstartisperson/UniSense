@@ -30,7 +30,7 @@ public enum ControllerType
 public class Player
 {
     public string Name { get; private set; }
-    private ref UniSenseUser user { get { return ref NewUniSenseConnectionHandler.UnisenseUsers[_unisenseId]; } }
+    private ref OldUniSenseUser user { get { return ref OldUniSenseConnectionHandler.UnisenseUsers[_unisenseId]; } }
     private Rect CameraRect { get { return playerInput.camera.rect; } set { playerInput.camera.rect = value; } }
     private GameObject gameObject;
     private PlayerInput playerInput { get { return gameObject.GetComponent<PlayerInput>(); } }
@@ -257,7 +257,7 @@ public class DualSenseManager : MonoBehaviour, IHandleMultiplayer
                 return;
             }
 
-            NewUniSenseConnectionHandler.InitializeMultiplayer(this);
+            OldUniSenseConnectionHandler.InitializeMultiplayer(this);
 
             PlayerInputManager.instance.EnableJoining();
             PlayerInputManager.instance.playerPrefab = PlayerPrefab;
@@ -294,7 +294,7 @@ public class DualSenseManager : MonoBehaviour, IHandleMultiplayer
         {
             case ControllerType.DualSenseBT:
                 key = device.description.serial.ToString();
-                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
+                if (OldUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
                 {
                     if (!Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
                     RemovePlayer(playerindex);
@@ -302,7 +302,7 @@ public class DualSenseManager : MonoBehaviour, IHandleMultiplayer
                 break;
             case ControllerType.DualSenseUSB:
                 key = device.deviceId.ToString();
-                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
+                if (OldUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
                 {
                     if (!Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
                     RemovePlayer(playerindex);
@@ -310,7 +310,7 @@ public class DualSenseManager : MonoBehaviour, IHandleMultiplayer
                 break;
             case ControllerType.GenericGamepad:
                 key = device.deviceId.ToString();
-                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
+                if (OldUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
                 {
                     if (!Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
                     RemovePlayer(playerindex);
@@ -338,7 +338,7 @@ public class DualSenseManager : MonoBehaviour, IHandleMultiplayer
         {
             case ControllerType.DualSenseBT:
                 key = device.description.serial.ToString();
-                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
+                if (OldUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
                 {
                     if (Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
                     if (PersistPlayers && AttemptReconnect(unisenseId)) return;
@@ -347,7 +347,7 @@ public class DualSenseManager : MonoBehaviour, IHandleMultiplayer
                 break;
             case ControllerType.DualSenseUSB:
                 key = device.deviceId.ToString();
-                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
+                if (OldUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
                 {
                     if (Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
                     if (PersistPlayers && AttemptReconnect(unisenseId)) return;
@@ -356,7 +356,7 @@ public class DualSenseManager : MonoBehaviour, IHandleMultiplayer
                 break;
             case ControllerType.GenericGamepad:
                 key = device.deviceId.ToString();
-                if (NewUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
+                if (OldUniSenseConnectionHandler.userLookup.TryGetUnisenseId(key, out unisenseId))
                 {
                     if (Player.FindPlayerWithUnisenseId(unisenseId, out playerindex)) return;
                     if (PersistPlayers && AttemptReconnect(unisenseId)) return;

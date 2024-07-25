@@ -38,10 +38,12 @@ namespace UniSense.pair
             
         }
 
+        
         public void BeginPairQueue(DualSenseUSBGamepadHID device)
         {
             deviceQueue.Add(device);
             deviceTime.Add((char)0);
+           
         }
 
     }

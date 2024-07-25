@@ -10,7 +10,7 @@ using System.Linq;
 using UnityEngine.InputSystem.LowLevel;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
-using DS5W;
+using WrapperDS5W;
 using UnityEngine.InputSystem.DualSense;
 using UnityEngine.Scripting;
 using System.Text;
@@ -25,9 +25,9 @@ using System.Text;
 //TODO: 
 namespace UniSense.DevConnections {
 
-	
 
-	public interface IManageable
+    #region Refactored
+    public interface IManageable
     {
 		public void SetCurrentUser(int unisenseId);
     }
@@ -78,7 +78,7 @@ namespace UniSense.DevConnections {
 		_x64,
 		_x86
 	}
-	public class UniSenseUser 
+	public class OldUniSenseUser 
 	{
 		
 		public int UniSenseID { get; internal set;}
@@ -87,7 +87,7 @@ namespace UniSense.DevConnections {
 		public bool ConnectionOpen { get; private set; }
 		public bool ReadyToConnect { get; private set;}
 		public bool Enabled { get; internal set; }
-		public UniSenseDevice Devices { get; internal set; }
+		public UniSenseDevice Devices {  get;  set; }
 		public bool BTAttached { get; private set; }
 		public bool USBAttached { get; private set; }
 		public bool GenericAttached { get; private set; }
@@ -119,7 +119,7 @@ namespace UniSense.DevConnections {
 			}
 		}
 
-		public UniSenseUser()
+		public OldUniSenseUser()
 		{
 			_osType = (IntPtr.Size == 4) ? OS_Type._x86 : OS_Type._x64;
 			SetDefualts();
@@ -185,21 +185,21 @@ namespace UniSense.DevConnections {
 					this.Devices.DualsenseBT = device as DualSenseBTGamepadHID;
 					this.UniSenseID = unisenseID;
 					this.SerialNumber = device.description.serial;
-					NewUniSenseConnectionHandler.userLookup.AddValue(this.SerialNumber, unisenseID);
+					OldUniSenseConnectionHandler.userLookup.AddValue(this.SerialNumber, unisenseID);
 					break;
 				case DeviceType.DualSenseUSB:
 					if (USBAttached) return false;
 					USBAttached = true;
 					this.Devices.DualsenseUSB = device as DualSenseUSBGamepadHID;
 					this.UniSenseID = unisenseID;
-					NewUniSenseConnectionHandler.userLookup.AddValue(device.deviceId.ToString(), unisenseID);
+					OldUniSenseConnectionHandler.userLookup.AddValue(device.deviceId.ToString(), unisenseID);
 					break;
 				case DeviceType.GenericGamepad:
 					if (GenericAttached) return false;
 					GenericAttached = true;
 					this.Devices.GenericGamepad = device as Gamepad;
 					this.UniSenseID = unisenseID;
-					NewUniSenseConnectionHandler.userLookup.AddValue(device.deviceId.ToString(), unisenseID);
+					OldUniSenseConnectionHandler.userLookup.AddValue(device.deviceId.ToString(), unisenseID);
 					break;
 				default: 
 					return false;
@@ -361,7 +361,7 @@ namespace UniSense.DevConnections {
             {
                 case DeviceType.DualSenseBT:
 					if(!BTAttached) return false;
-					if(!NewUniSenseConnectionHandler.userLookup.RemoveByKey(Devices.DualsenseBT.description.serial))
+					if(!OldUniSenseConnectionHandler.userLookup.RemoveByKey(Devices.DualsenseBT.description.serial))
 					{
 						Debug.LogError("Failed to remove key");
 						return false;
@@ -372,7 +372,7 @@ namespace UniSense.DevConnections {
                     break;
                 case DeviceType.DualSenseUSB:
 					if(!USBAttached) return false;
-					if (!NewUniSenseConnectionHandler.userLookup.RemoveByKey(Devices.DualsenseUSB.deviceId.ToString()))
+					if (!OldUniSenseConnectionHandler.userLookup.RemoveByKey(Devices.DualsenseUSB.deviceId.ToString()))
 					{
 						Debug.LogError("Failed to remove key");
 						return false;
@@ -382,7 +382,7 @@ namespace UniSense.DevConnections {
 					break;
                 case DeviceType.GenericGamepad:
 					if (!GenericAttached) return false;
-					if (!NewUniSenseConnectionHandler.userLookup.RemoveByKey(Devices.GenericGamepad.deviceId.ToString()))
+					if (!OldUniSenseConnectionHandler.userLookup.RemoveByKey(Devices.GenericGamepad.deviceId.ToString()))
 					{
 						Debug.LogError("Failed to remove key");
 						return false;
@@ -426,7 +426,7 @@ namespace UniSense.DevConnections {
                 default:
 					break;
             }
-			NewUniSenseConnectionHandler.userLookup.RemoveByValue(UniSenseID);
+			OldUniSenseConnectionHandler.userLookup.RemoveByValue(UniSenseID);
 			SetDefualts();
         }
 	}
@@ -437,16 +437,16 @@ namespace UniSense.DevConnections {
 		GenericGamepad,
 		None
 	}
-	public class UniSenseDevice
-	{
-		public DualSenseUSBGamepadHID DualsenseUSB;
-		public DualSenseBTGamepadHID DualsenseBT;
-		public Gamepad GenericGamepad;
-		public DeviceContext contextBT;
-		public DeviceEnumInfo enumInfoBT;
-		public InputDevice ActiveDevice;
-	}
-	public class UserIndexFinder
+    public class UniSenseDevice
+    {
+        public DualSenseUSBGamepadHID DualsenseUSB;
+        public DualSenseBTGamepadHID DualsenseBT;
+        public Gamepad GenericGamepad;
+        public DeviceContext contextBT;
+        public DeviceEnumInfo enumInfoBT;
+        public InputDevice ActiveDevice;
+    }
+    public class UserIndexFinder
 	{
 		Dictionary<int, List<string>> valueKeyLookup = new Dictionary<int, List<string>>();
 		Dictionary<string, int> unisenseIdLookup = new Dictionary<string, int>();
@@ -493,9 +493,12 @@ namespace UniSense.DevConnections {
 			return false;
 		}
 	}
-	#endregion
-	//TODO: Add a input action that will allow the change of current user
-	public static class NewUniSenseConnectionHandler
+
+    #endregion
+
+    #endregion
+    //TODO: Add a input action that will allow the change of current user
+    public static class OldUniSenseConnectionHandler
     {
 		#region Variables
 		private static Queue<DualSenseUSBGamepadHID> _devicesToPair = new Queue<DualSenseUSBGamepadHID>();
@@ -503,12 +506,12 @@ namespace UniSense.DevConnections {
 		private static Queue<int> _availableUnisenseId = new Queue<int>();
         private static OS_Type _osType;
 		internal static UserIndexFinder userLookup = new UserIndexFinder();
-		private static UniSenseUser[] _unisenseUsers;
+		private static OldUniSenseUser[] _unisenseUsers;
 		
 		/// <summary>
 		/// NEVER set values like UnisenseUsers[0] = new UniSenseUser();
 		/// </summary>
-		public static UniSenseUser[] UnisenseUsers { get { return _unisenseUsers; } }
+		public static OldUniSenseUser[] UnisenseUsers { get { return _unisenseUsers; } }
 
      
 		private const int _persistentPerSecond = 875; //Approximate amount the persistent counter will count per second
@@ -531,7 +534,7 @@ namespace UniSense.DevConnections {
 		private static int _currentUserIndex = -1;
 		private static IHandleMultiplayer _handleMultiplayer;
 		private static IHandleSingleplayer _handleSingleplayer;
-		public static ref UniSenseUser CurrentUser
+		public static ref OldUniSenseUser CurrentUser
         {
 			get { return ref _unisenseUsers[_currentUserIndex]; }
         }
@@ -544,7 +547,7 @@ namespace UniSense.DevConnections {
 
 		//Ensures that this class is initialized only in windows, otherwise the application is quit
 		//Also ensures that when _osType is accessed it will be set correctly
-		static NewUniSenseConnectionHandler()
+		static OldUniSenseConnectionHandler()
 		{
 			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -611,11 +614,11 @@ namespace UniSense.DevConnections {
 			_usbConnectedAction.canceled += OnUSBRemoved;
             InputSystem.onAfterUpdate += InputSystemUpdate;
 
-			_unisenseUsers = new UniSenseUser[maxPlayers];
+			_unisenseUsers = new OldUniSenseUser[maxPlayers];
 			for (int i = 0; i < maxPlayers; i++)
 			{
 				_availableUnisenseId.Enqueue(i);
-				_unisenseUsers[i] = new UniSenseUser();
+				_unisenseUsers[i] = new OldUniSenseUser();
 			}
 
 			//TODO: Could Combine all three foreach loops into one would be easy because Gamepad.all contains usb and bt dualsense gamepads
@@ -677,7 +680,7 @@ namespace UniSense.DevConnections {
 			if(DevicesToEnable.TryDequeue(out InputDevice device)) InputSystem.EnableDevice(device);
         }
 
-        private static void OnUSBRemoved(InputAction.CallbackContext obj)
+        private static void OnUSBRemoved(InputAction.CallbackContext obj) //TODO Remove this if a usb dualsense is removed and an active bt dual sense exists then the normal method to deal with the disconscettion of a controller should suffice
         {
 			
 			InputDevice device = obj.control.device;
@@ -1005,104 +1008,7 @@ namespace UniSense.DevConnections {
 		//Dynamic switching between BT and USB won't work but it's such a rare edge case that this solution is good enough.
 		//Keep in mind this isn't a problem in single player, since any controller will control the same player.
 		//TODO: need to make sure that it isn't possible to add a device after the input system update and still be considered here;
-		private static void MatchDevices()
-		{
-			List<DualSenseUSBGamepadHID> devicesToPair = _devicesToPair.ToList();
-			Queue<int> stillLookingForPair = new Queue<int>();
-			foreach (int unisenseID in _lookingForPair)
-			{
-
-				bool pairingSuccsesful = false;
-				if (!_unisenseUsers[unisenseID].BTAttached) continue;
-				DualSenseBTGamepadHID lookingForPair = _unisenseUsers[unisenseID].Devices.DualsenseBT;
-				Debug.Log("Batt: " + lookingForPair.batteryLevel.ReadValue());
-				if (lookingForPair.usbConnected.isPressed)
-				{
-					if (!GetCounters(_unisenseUsers[unisenseID].Devices.DualsenseBT, out uint inputFastCounter, out uint inputPersistentCounter, out uint inputFrameCounter))
-					{
-						Debug.LogError("Error retrieving counters");
-						continue;
-					}
-					foreach (InputDevice device in devicesToPair)
-					{
-						if (!(device is DualSenseUSBGamepadHID))
-						{
-							Debug.LogError("Not DualSense usb device");
-							continue;
-						}
-						if (Math.Abs(lookingForPair.batteryLevel.ReadValue() - (device as DualSenseUSBGamepadHID).batteryLevel.ReadValue()) > 1) continue;
-						if (!GetCounters(device, out uint fastCounter, out uint persistentCounter, out uint frameCounter))
-						{
-							Debug.LogError("Error retrieving counters");
-							continue;
-						}
-						uint fastDelta = UintDelta(inputFastCounter, fastCounter, 4);
-						uint persistentDelta = UintDelta(inputPersistentCounter, persistentCounter, 4);
-						uint frameDelta = UintDelta(inputFrameCounter, frameCounter, 1);
-						if (fastDelta <= _fastEpsilon && persistentDelta <= _persistantEpsilon && frameDelta <= _frameEpsilon)
-						{
-							//Could multiply by the inverse to speed up but not worth readability cost
-							decimal fastTimepassed = (decimal)fastDelta / (decimal)_fastPerSecond;
-							decimal persistantTimepassed = (decimal)persistentDelta / (decimal)_persistentPerSecond;
-
-							decimal timeDelta = Math.Abs(fastTimepassed - persistantTimepassed);
-							if (timeDelta > _timeEpsilon) continue;
-							if (!devicesToPair.Remove(device as DualSenseUSBGamepadHID)) Debug.LogError("can't remove device");
-							
-							//Successfully matched the USB device to it's BT counterpart
-							_unisenseUsers[unisenseID].AddDevice(device, DeviceType.DualSenseUSB, unisenseID);
-                            if (_isMultiplayer)
-                            {
-								_handleMultiplayer.OnUserModified(unisenseID, UserChange.USBAdded);
-							}
-                            else
-                            {
-								if(unisenseID == _currentUserIndex) _handleSingleplayer.OnCurrentUserModified(UserChange.USBAdded);
-								else
-                                {
-									_currentUserIndex = unisenseID;
-									_handleSingleplayer.OnCurrentUserChanged(unisenseID);
-
-								}
-                                
-                            }
-                            
-							pairingSuccsesful = true;
-							break;
-						}
-					}
-					if (pairingSuccsesful) continue;
-					stillLookingForPair.Enqueue(unisenseID);
-					
-					continue;
-				}
-				
-			}
-			//Just finished tyring to match controllers deal with the remainder
-			//Just add USB devices as new users
-			//Keep BT devices that are plugged in the _lookingForPair list to try again
-			_lookingForPair = stillLookingForPair;
-			foreach (InputDevice device in devicesToPair)
-			{
-				if (!_availableUnisenseId.TryDequeue(out int unisenseId) || !_unisenseUsers[unisenseId].AddDevice(device, DeviceType.DualSenseUSB, unisenseId))
-				{
-					Debug.LogError("can't add device");
-					continue;
-				}
-                if (_isMultiplayer)
-                {
-					_handleMultiplayer.OnUserAdded(unisenseId);
-				}
-                else
-                {
-					_currentUserIndex = unisenseId;
-					_handleSingleplayer.OnCurrentUserChanged(unisenseId);
-                }
-				
-			}
-			_devicesToPair.Clear();
-			_lookingForPair = stillLookingForPair;
-		}
+		
 
 		private static void QueueDeviceInitialization()
         {
@@ -1153,6 +1059,107 @@ namespace UniSense.DevConnections {
 			_deviceMatchQueued = false;
 		}
 
+        #region Refactored
+        private static void MatchDevices()
+		{
+			List<DualSenseUSBGamepadHID> devicesToPair = _devicesToPair.ToList();
+			Queue<int> stillLookingForPair = new Queue<int>();
+			foreach (int unisenseID in _lookingForPair)
+			{
+
+				bool pairingSuccsesful = false;
+				if (!_unisenseUsers[unisenseID].BTAttached) continue;
+				DualSenseBTGamepadHID lookingForPair = _unisenseUsers[unisenseID].Devices.DualsenseBT;
+				Debug.Log("Batt: " + lookingForPair.batteryLevel.ReadValue());
+				if (lookingForPair.usbConnected.isPressed)
+				{
+					if (!GetCounters(_unisenseUsers[unisenseID].Devices.DualsenseBT, out uint inputFastCounter, out uint inputPersistentCounter, out uint inputFrameCounter))
+					{
+						Debug.LogError("Error retrieving counters");
+						continue;
+					}
+					foreach (InputDevice device in devicesToPair)
+					{
+						if (!(device is DualSenseUSBGamepadHID))
+						{
+							Debug.LogError("Not DualSense usb device");
+							continue;
+						}
+						if (Math.Abs(lookingForPair.batteryLevel.ReadValue() - (device as DualSenseUSBGamepadHID).batteryLevel.ReadValue()) > 1) continue;
+						if (!GetCounters(device, out uint fastCounter, out uint persistentCounter, out uint frameCounter))
+						{
+							Debug.LogError("Error retrieving counters");
+							continue;
+						}
+						uint fastDelta = UintDelta(inputFastCounter, fastCounter, 4);
+						uint persistentDelta = UintDelta(inputPersistentCounter, persistentCounter, 4);
+						uint frameDelta = UintDelta(inputFrameCounter, frameCounter, 1);
+						if (fastDelta <= _fastEpsilon && persistentDelta <= _persistantEpsilon && frameDelta <= _frameEpsilon)
+						{
+							//Could multiply by the inverse to speed up but not worth readability cost
+							decimal fastTimepassed = (decimal)fastDelta / (decimal)_fastPerSecond;
+							decimal persistantTimepassed = (decimal)persistentDelta / (decimal)_persistentPerSecond;
+
+							decimal timeDelta = Math.Abs(fastTimepassed - persistantTimepassed);
+							if (timeDelta > _timeEpsilon) continue;
+							if (!devicesToPair.Remove(device as DualSenseUSBGamepadHID)) Debug.LogError("can't remove device");
+
+							//Successfully matched the USB device to it's BT counterpart
+							_unisenseUsers[unisenseID].AddDevice(device, DeviceType.DualSenseUSB, unisenseID);
+							if (_isMultiplayer)
+							{
+								_handleMultiplayer.OnUserModified(unisenseID, UserChange.USBAdded);
+							}
+							else
+							{
+								if (unisenseID == _currentUserIndex) _handleSingleplayer.OnCurrentUserModified(UserChange.USBAdded);
+								else
+								{
+									_currentUserIndex = unisenseID;
+									_handleSingleplayer.OnCurrentUserChanged(unisenseID);
+
+								}
+
+							}
+
+							pairingSuccsesful = true;
+							break;
+						}
+					}
+					if (pairingSuccsesful) continue;
+					stillLookingForPair.Enqueue(unisenseID);
+
+					continue;
+				}
+
+			}
+			//Just finished tyring to match controllers deal with the remainder
+			//Just add USB devices as new users
+			//Keep BT devices that are plugged in the _lookingForPair list to try again
+			_lookingForPair = stillLookingForPair;
+			foreach (InputDevice device in devicesToPair)
+			{
+				if (!_availableUnisenseId.TryDequeue(out int unisenseId) || !_unisenseUsers[unisenseId].AddDevice(device, DeviceType.DualSenseUSB, unisenseId))
+				{
+					Debug.LogError("can't add device");
+					continue;
+				}
+				if (_isMultiplayer)
+				{
+					_handleMultiplayer.OnUserAdded(unisenseId);
+				}
+				else
+				{
+					_currentUserIndex = unisenseId;
+					_handleSingleplayer.OnCurrentUserChanged(unisenseId);
+				}
+
+			}
+			_devicesToPair.Clear();
+			_lookingForPair = stillLookingForPair;
+		} 
+
+		#region matching helpers
 		/// <summary>
 		/// Gets the counters used for device matching from a DualSense device
 		/// </summary>
@@ -1256,7 +1263,10 @@ namespace UniSense.DevConnections {
 			return true;
 		}
 
-		private static void EnsureClosure()
+        #endregion
+        #endregion
+
+        private static void EnsureClosure()
 		{
 			EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 			EditorApplication.wantsToQuit += Destroy;
