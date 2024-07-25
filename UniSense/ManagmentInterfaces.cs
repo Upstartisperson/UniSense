@@ -1,3 +1,4 @@
+using System;
 namespace UniSense.Management
 {
 	public enum UserChange
@@ -13,7 +14,7 @@ namespace UniSense.Management
 
 	public interface IManageable
 	{
-		public void SetCurrentUser(int unisenseId);
+		public void SetCurrentUser_M(int unisenseId);
 	}
 	
 	public interface IConnectionListener
@@ -21,6 +22,7 @@ namespace UniSense.Management
 		public void OnUserAdded(int unisenseId);
 		public void OnUserRemoved(int unisenseId);
 		public void OnUserModified(int unisenseId, UserChange change);
+		
 		public void InitilizeUsers();
 	
 		public void OnCurrentUserModified();
@@ -32,15 +34,16 @@ namespace UniSense.Management
 		public void OnUserAdded(int unisenseId);
 		public void OnUserRemoved(int unisenseId);
 		public void OnUserModified(int unisenseId, UserChange change);
+		[Obsolete("Don't have a need for it")]
 		public void InitilizeUsers();
 	}
 	
 	public interface IHandleSingleplayer
 	{
-		public void InitilizeUsers(int unisenseId);
+		
 		public void OnCurrentUserModified(UserChange change);
-		public void OnCurrentUserChanged(int uniSenseId);
-		public void OnNoCurrentUser();
+		public void SetCurrentUser_S(int uniSenseId);
+		public void SetNoCurrentUser();
 	
 	}
 

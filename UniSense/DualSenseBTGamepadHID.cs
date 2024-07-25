@@ -69,7 +69,7 @@ namespace UniSense
 
 
 
-        protected override void OnAdded()
+        protected override void OnAdded() //TODO: Why I am disabling the device first
         {	
 			base.OnAdded();
 			InputSystem.DisableDevice(this);

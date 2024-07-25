@@ -84,7 +84,7 @@ namespace UniSense.Users
 
 		public string SerialNumber { get; private set; }
 		public bool ConnectionOpen { get; private set; }
-		public bool ReadyToConnect { get; private set; }
+		public bool ReadyToConnect { get; private set; } //TODO : Why is this needed?
 		public bool Enabled { get; internal set; }
 		public UniSenseDevice Devices { get; private set; }
 		public bool BTAttached { get; private set; }
@@ -99,7 +99,7 @@ namespace UniSense.Users
 		/// </summary>
 		public bool IsReadyToConnect
 		{
-			get { return USBAttached || GenericAttached || (BTAttached && !Devices.DualsenseBT.usbConnected.isPressed); }
+			get { return USBAttached || GenericAttached || BTAttached; }
 		}
 
 		public DeviceType ActiveDevice = DeviceType.None;
@@ -144,22 +144,54 @@ namespace UniSense.Users
 		}
 
 		/// <summary>
-		/// Use To initlize a unisense user. Do this before adding a device
+		/// Initializes a new user. Only interact with initialized users. Adds an optional output for the assigned UniSense Id
 		/// </summary>
+		/// <param name="device"></param>
+		/// <param name="deviceType"></param>
 		/// <returns></returns>
-		public int Initialize()
+		/// <exception cref="Exception"></exception>
+		public static bool InitUser(InputDevice device, DeviceType deviceType, out int id)
         {
-			if(UniSenseID != -1)
-            {
-				Debug.LogWarning("User Already Initialized");
-				return UniSenseID;
-            }
+			
+			if (!_availableUnisenseId.TryDequeue(out id))
+			{
+				throw new Exception("No UniSense ID's available"); //TODO: Could handle more gracefully, just stop the process of connecting the device that causes this error
+			}
+			Users[id].Initialize(id);
+			return Users[id].AddDevice(device, deviceType);
+		}
+
+		/// <summary>
+		/// Initializes a new user. Only interact with initialized users
+		/// </summary>
+		/// <param name="device"></param>
+		/// <param name="deviceType"></param>
+		/// <returns></returns>
+		/// <exception cref="Exception"></exception>
+		public static bool InitUser(InputDevice device, DeviceType deviceType)
+		{
+
 			if (!_availableUnisenseId.TryDequeue(out int id))
 			{
 				throw new Exception("No UniSense ID's available"); //TODO: Could handle more gracefully, just stop the process of connecting the device that causes this error
 			}
+			Users[id].Initialize(id);
+			return Users[id].AddDevice(device, deviceType);
+
+		}
+
+
+		/// <summary>
+		/// Use To initialize a UniSense user. Do this before adding a device
+		/// </summary>
+		/// <returns></returns>
+		private void Initialize(int id)
+        {
+			if(UniSenseID != -1)
+            {
+				Debug.LogWarning("User Already Initialized");
+            }
 			UniSenseID = id;
-			return id;
         }
 
 		public bool PairWithPlayerInput(PlayerInput playerInput)
@@ -197,8 +229,8 @@ namespace UniSense.Users
 		{
 			if(this.UniSenseID == -1)
             {
-				Initialize();
-				Debug.LogWarning("User Not Initialized!! Always Initialize First");
+				Debug.LogError("User Not Initialized!! Always Initialize First");
+				throw new NullReferenceException("User Not Initialized!! Always Initialize First");
             }
 
 			switch (deviceType)

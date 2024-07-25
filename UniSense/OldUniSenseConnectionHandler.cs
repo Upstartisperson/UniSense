@@ -564,21 +564,23 @@ namespace UniSense.DevConnections {
 			EnsureClosure();
 		}
 
-		
-		private static void OnPlayModeStateChanged(PlayModeStateChange stateChange)
-        {
-          if(stateChange == PlayModeStateChange.ExitingPlayMode) Destroy();
-        }
 
-        #region Initialization
-        /// <summary>
-        /// Initialize unisense in single player mode
-        /// </summary>
-        /// <param name="singleplayerListener"></param>
-        /// <param name="allowKeyboardMouse"></param>
-        /// <param name="allowGenergicGamepad"></param>
-        /// <returns>True if successful</returns>
-        public static bool InitializeSingleplayer(IHandleSingleplayer singleplayerListener, bool allowKeyboardMouse = false, bool allowGenergicGamepad = false)
+		private static void OnPlayModeStateChanged(PlayModeStateChange stateChange)
+		{
+			if (stateChange == PlayModeStateChange.ExitingPlayMode) Destroy();
+
+
+		}
+
+		#region Initialization
+		/// <summary>
+		/// Initialize unisense in single player mode
+		/// </summary>
+		/// <param name="singleplayerListener"></param>
+		/// <param name="allowKeyboardMouse"></param>
+		/// <param name="allowGenergicGamepad"></param>
+		/// <returns>True if successful</returns>
+		public static bool InitializeSingleplayer(IHandleSingleplayer singleplayerListener, bool allowKeyboardMouse = false, bool allowGenergicGamepad = false)
         {
             if (IsInitialized || singleplayerListener == null) return false;
 			IsInitialized = true;
