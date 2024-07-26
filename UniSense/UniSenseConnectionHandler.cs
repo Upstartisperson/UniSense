@@ -71,6 +71,8 @@ public static class UniSenseConnectionHandler
 	}
 	private static bool Destroy()
 	{
+		UnisensePair.OnPairFailed -= UsbPairFailed;
+		UnisensePair.OnUsbPaired -= OnUsbPaird;
 		EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 		EditorApplication.wantsToQuit -= Destroy;
 		InputSystem.onDeviceChange -= OnDeviceChange;
@@ -98,9 +100,9 @@ public static class UniSenseConnectionHandler
 		if (IsInitialized || singleplayerListener == null) return false;
 		IsInitialized = true;
 		_handleSingleplayer = singleplayerListener;
-		bool status = FinishInitialization(false, allowKeyboardMouse, allowGenergicGamepad, _maxPlayersDefualt);
-		if(status)
-        {
+		FinishInitialization(false, allowKeyboardMouse, allowGenergicGamepad, _maxPlayersDefualt);
+		if (_currentUserIndex != -1)
+		{
 			_handleSingleplayer.SetCurrentUser_S(_currentUserIndex);
 			return true;
 		}
@@ -120,17 +122,16 @@ public static class UniSenseConnectionHandler
 		if (IsInitialized || multiplayerListener == null) return false;
 		IsInitialized = true;
 		_handleMultiplayer = multiplayerListener;
-		bool status = FinishInitialization(true, allowKeyboardMouse, allowGenergicGamepad, maxPlayers);
-		if (status)
-		{
-			_handleMultiplayer.InitilizeUsers();
-			return true;
-		}
+		FinishInitialization(true, allowKeyboardMouse, allowGenergicGamepad, maxPlayers);
+		
 		return false;
 	}
 
-	private static bool FinishInitialization(bool isMultiplayer, bool allowKeyboardMouse, bool allowGenergicGamepad, int maxPlayers)
+	private static void FinishInitialization(bool isMultiplayer, bool allowKeyboardMouse, bool allowGenergicGamepad, int maxPlayers)
 	{
+		UnisensePair.OnPairFailed += UsbPairFailed;
+		UnisensePair.OnUsbPaired += OnUsbPaird;
+		UniSenseUser.init();
 		_isMultiplayer = isMultiplayer;
 		_allowGenericGamepad = allowGenergicGamepad;
 		_allowKeyboardMouse = allowKeyboardMouse;
@@ -178,7 +179,7 @@ public static class UniSenseConnectionHandler
 		}
 
 		if (FindNewCurrentUser(out int Id)) _currentUserIndex = Id;
-		return true;
+		
 	}
 
 	private static bool FindNewCurrentUser(out int unisenseId)
@@ -188,6 +189,43 @@ public static class UniSenseConnectionHandler
 			if (_users[unisenseId].IsReadyToConnect) return true;
 		}
 		return false;
+	}
+
+	private static void OnUsbPaird(int unisenseId) //TODO : Debug
+    {
+        if (_isMultiplayer)
+        {
+			_handleMultiplayer.OnUserModified(unisenseId, UserChange.USBAdded);
+        }
+		else 
+        {
+			if (_currentUserIndex == unisenseId) _handleSingleplayer.OnCurrentUserModified(UserChange.USBAdded);
+			else
+            {
+				_currentUserIndex = unisenseId;
+				_handleSingleplayer.SetCurrentUser_S(unisenseId);
+			}
+            
+		}
+    }
+	private static void UsbPairFailed(DualSenseUSBGamepadHID device) //TODO : Debug
+	{
+		if (!UniSenseUser.InitUser(device, DeviceType.DualSenseUSB, out int id))
+		{
+			Debug.LogError("failed to initialize USB user");
+			return;
+		}
+		if (_isMultiplayer)
+		{
+			_handleMultiplayer.OnUserAdded(id);
+		}
+		else
+		{
+			_currentUserIndex = id;
+			_handleSingleplayer.SetCurrentUser_S(id);
+		}
+
+
 	}
 
 	private static void OnDeviceChange(InputDevice device, InputDeviceChange change)
@@ -215,6 +253,7 @@ public static class UniSenseConnectionHandler
 				{
                     
                     case DualSenseBTGamepadHID:
+						InputSystem.EnableDevice(device);
 						if(!UniSenseUser.InitUser(device, DeviceType.DualSenseBT, out unisenseId))
                         {
 							Debug.LogError("failed to initialize Bt user");
@@ -276,6 +315,13 @@ public static class UniSenseConnectionHandler
 
 				if (!UniSenseUser.Find(key, out unisenseId))
 				{
+					if (deviceType == DeviceType.DualSenseUSB)
+                    {
+						if(pairQueue.TryRemoveQueue(device as DualSenseUSBGamepadHID))
+                        {
+							return;
+                        }
+                    }
 					Debug.LogError("No UnisenseId found");
 					return;
 				}

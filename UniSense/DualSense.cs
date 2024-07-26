@@ -38,7 +38,7 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 	public void Start()
     {
 		
-		if (DualSenseManager.instance != null) //If DualSenseManager exists in the scene then let DualSenseManager handle initialization
+		if (OldDualSenseManager.instance != null) //If DualSenseManager exists in the scene then let DualSenseManager handle initialization
         {
 			_isManaged = true;
 			return;
@@ -58,15 +58,8 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 		if(_initTimer > 50)
         {
 			InputSystem.onAfterUpdate -= QueueInit;
-			if (UniSenseConnectionHandler.InitializeSingleplayer(this, AllowKeyboardMouse, AllowGenericController))
-			{
-				Debug.Log("Initialization successful");
-			}
-			else
-			{
-				Debug.LogError("Initialization failed");
-				return;
-			}
+			UniSenseConnectionHandler.InitializeSingleplayer(this, AllowKeyboardMouse, AllowGenericController);
+			Debug.Log("Initialization successful");
 		}
 		
     }
@@ -93,13 +86,13 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 		_currentUser.PairWithPlayerInput(GetComponent<PlayerInput>());
 		
 		if (_currentUser.USBAttached && _currentUser.SetActiveDevice(DeviceType.DualSenseUSB)) return;
-		else Debug.LogError("USB Failed To Connect");
+		else if(_currentUser.USBAttached) Debug.LogError("USB Failed To Connect");
 
 		if (_currentUser.BTAttached && _currentUser.SetActiveDevice(DeviceType.DualSenseBT)) return;
-		else Debug.LogError("BT Failed To Connect");
+		else if (_currentUser.BTAttached) Debug.LogError("BT Failed To Connect");
 
 		if (_currentUser.GenericAttached && _currentUser.SetActiveDevice(DeviceType.GenericGamepad)) return;
-		else Debug.LogError("Generic Failed To Connect");
+		else if (_currentUser.GenericAttached) Debug.LogError("Generic Failed To Connect");
 
 	}
 
@@ -130,6 +123,26 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 		
     }
 
+	public void ResetUser()
+    {
+		if (_currentUserIndex == -1) return;
+		DeviceType deviceType = _currentUser.ActiveDevice;
+		_currentUser.SetActiveDevice(DeviceType.None);
+		_currentUser.SetActiveDevice(deviceType);
+		if (_currentUser.BTAttached) InputSystem.EnableDevice(_currentUser.Devices.DualsenseBT);
+		if (_currentUser.USBAttached) InputSystem.EnableDevice(_currentUser.Devices.DualsenseUSB);
+		if (_currentUser.GenericAttached) InputSystem.EnableDevice(_currentUser.Devices.GenericGamepad);
+
+		if (_currentUser.USBAttached && _currentUser.SetActiveDevice(DeviceType.DualSenseUSB)) return;
+		else if (_currentUser.USBAttached) Debug.LogError("USB Failed To Connect");
+
+		if (_currentUser.BTAttached && _currentUser.SetActiveDevice(DeviceType.DualSenseBT)) return;
+		else if (_currentUser.BTAttached) Debug.LogError("BT Failed To Connect");
+
+		if (_currentUser.GenericAttached && _currentUser.SetActiveDevice(DeviceType.GenericGamepad)) return;
+		else if (_currentUser.GenericAttached) Debug.LogError("Generic Failed To Connect");
+
+	}
     public void SetNoCurrentUser()
     {
        _currentUserIndex = -1;

@@ -24,7 +24,9 @@ namespace UniSense.pair
 		private const int _persistantEpsilon = 20;
 		private const decimal _timeEpsilon = 0.03m;
 		private static UniSenseUser[] _uniSenseUsers { get { return UniSenseUser.Users; } }
-		
+
+		public static event Action<int> OnUsbPaired;
+		public static event Action<DualSenseUSBGamepadHID> OnPairFailed;
 
 		private static unsafe bool GetCounters(InputDevice device, out uint fastCounter, out uint persistentCounter, out uint frameCounter)
 		{
@@ -117,7 +119,7 @@ namespace UniSense.pair
 
 						//Successfully matched the USB device to it's BT counterpart
 						_uniSenseUsers[i].AddDevice(device, DeviceType.DualSenseUSB);
-
+						if (OnUsbPaired != null) OnUsbPaired(i);
 						//_handleMultiplayer.OnUserModified(unisenseID, UserChange.USBAdded); //Removed since all it does is change the active device to USB in this situation. Since the BT device will continue to work while USB is connected it only needs to be swapped when and if the BT device is disconnected which is handled elsewhere  
 
 						
@@ -127,6 +129,7 @@ namespace UniSense.pair
 				}
 
 			}
+			if (OnPairFailed != null) OnPairFailed(device);
 			return false;
 
 

@@ -115,7 +115,7 @@ namespace UniSense.LowLevel
         [InputControl(name = "usbConnected", layout = "Button", displayName = "USB Plugged In", bit = 3)]
         [FieldOffset(55)] public byte usbConnected;
 
-        [InputControl(name = "usbConnectionActive", layout = "Button", displayName = "USB Connection Active", bit = 5)]
+        [InputControl(name = "usbConnectionActive", layout = "Button", displayName = "USB Connection Active", bit = 4)]
         [FieldOffset(54)] public byte usbConnectionStatus;
 
         [InputControl(name = "batteryFullyCharged", layout = "Button", displayName = "Battery is Fully Charged",bit = 5)]

@@ -60,7 +60,7 @@ namespace UniSense.Users
 	public class UniSenseUser
 	{
         #region Static Portion
-        public static UniSenseUser[] Users  = new UniSenseUser[32];
+        public static UniSenseUser[] Users;
 		private static OS_Type _osType;
 		private static Queue<int> _availableUnisenseId = new Queue<int>();
 
@@ -68,8 +68,22 @@ namespace UniSense.Users
 		{
 			for (int i = 0; i < 32; i++) _availableUnisenseId.Enqueue(i);
 			_osType = (IntPtr.Size == 4) ? OS_Type._x86 : OS_Type._x64;
+			Users = new UniSenseUser[32];
+			for (int i = 0; i < 32; i++)
+
+			{
+				Users[i] = new UniSenseUser();
+				Users[i].SetDefualts();
+				
+			}
 
 		}
+
+		
+		public static void init()
+        {
+
+        }
 
 		/// <summary>
 		/// Use This method to find the unisense ID assocated with an input device given a device ID or a serial number.
@@ -113,7 +127,7 @@ namespace UniSense.Users
 		/// <returns></returns>
 		public bool NeedsPair
         {
-			get { return (ActiveDevice == DeviceType.DualSenseBT) && !USBAttached; }
+			get { return (BTAttached) && !USBAttached; }
         }
 
 		/// <summary>
@@ -307,8 +321,10 @@ namespace UniSense.Users
 				case DeviceType.GenericGamepad:
 					Devices.ActiveDevice = Devices.GenericGamepad;
 					break;
+				case DeviceType.None:
+					Devices.ActiveDevice = null;
+					return true;
 			}
-
 			return _playerInput.SwitchCurrentControlScheme(new InputDevice[] { Devices.ActiveDevice });
 
 			//switch (deviceType)

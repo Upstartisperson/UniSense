@@ -32,6 +32,7 @@ namespace UniSense.pair
             if (deviceTime.Count == 0) return;
             if(deviceTime[0] >= QueueTime)
             {
+
                 UnisensePair.TryPair(deviceQueue[0]);
                 deviceQueue.RemoveAt(0);
                 deviceTime.RemoveAt(0);
@@ -50,8 +51,20 @@ namespace UniSense.pair
         {
             deviceQueue.Add(device);
             deviceTime.Add((char)0);
-            InputSystem.DisableDevice(device);
 
+        }
+        public bool TryRemoveQueue(DualSenseUSBGamepadHID device)
+        {
+            for (int i = 0; i < deviceQueue.Count; i++)
+            {
+                if (deviceQueue[i] == device)
+                {
+                    deviceQueue.RemoveAt(i);
+                    deviceTime.RemoveAt(i);
+                    return true;
+                }
+            }
+            return false;
         }
 
     }
