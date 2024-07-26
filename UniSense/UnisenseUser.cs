@@ -98,7 +98,7 @@ namespace UniSense.Users
 
 		public string SerialNumber { get; private set; }
 		public bool ConnectionOpen { get; private set; }
-		public bool ReadyToConnect { get; private set; } //TODO : Why is this needed?
+		
 		public bool Enabled { get; internal set; }
 		public UniSenseDevice Devices { get; private set; }
 		public bool BTAttached { get; private set; }
@@ -271,7 +271,7 @@ namespace UniSense.Users
 				default:
 					return false;
 			}
-			ReadyToConnect = true;
+			
 			return true;
 		}
 
@@ -380,6 +380,7 @@ namespace UniSense.Users
 		{
 			if (deviceType == DeviceType.DualSenseBT)
 			{
+				
 				DS5W_ReturnValue status = DS5W.findDevice(ref Devices.enumInfoBT, SerialNumber);
 				
 				if (status != DS5W_ReturnValue.OK)
@@ -475,7 +476,6 @@ namespace UniSense.Users
 					break;
 			}
 
-			ReadyToConnect = IsSomthingAttached;
 			return true;
 		}
 		/// <summary>

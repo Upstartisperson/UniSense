@@ -132,10 +132,7 @@ namespace UnityEngine.InputSystem.DualSense
             base.FinishSetup();
         }
 
-        /// <inheritdoc />
-        public virtual void SetLightBarColor(Color color)
-        {
-        }
+       
     }
     
 

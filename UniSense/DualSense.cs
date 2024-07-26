@@ -12,17 +12,17 @@ using WrapperDS5W;
 using UniSense.Management;
 using UniSense.Users;
 using UniSense.Utilities;
+using UniSense.Connections;
 using DeviceType = UniSense.Utilities.DeviceType;
 
 //TODO: Finish this
 //TODO: There Was a bug that I can't replicate anymore. when bt dissconeted and usb was attached when two players were instatnatied with the manager,
 //for whatever reason user.connection open would be set to false and no output commands would be sent
-public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
+public class DualSense : MonoBehaviour, IHandleSingleplayer
 {
     private int _currentUserIndex = -1;
     public bool AllowKeyboardMouse;
     public bool AllowGenericController;
-	private bool _isManaged;
 	private int _initTimer = 0;
 	
     private ref UniSenseUser _currentUser
@@ -38,9 +38,8 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 	public void Start()
     {
 		
-		if (OldDualSenseManager.instance != null) //If DualSenseManager exists in the scene then let DualSenseManager handle initialization
+		if (DualSenseManager.Instance != null) //If DualSenseManager exists in the scene then let DualSenseManager handle initialization
         {
-			_isManaged = true;
 			return;
         }
         if (UniSenseConnectionHandler.IsInitialized) return;
@@ -74,7 +73,7 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 		//if (_currentUser.USBAttached) _currentUser.SetActiveDevice(UniSense.DevConnections.DeviceType.GenericGamepad);
   //  }
 
-    public void SetCurrentUser_S(int unisenseId)
+    public bool SetCurrentUser(int unisenseId)
     {
 		Debug.Log("Current User Changed From: " + _currentUserIndex + "To: " + unisenseId); //TODO: Remove Debug Log
 		if(_currentUserIndex != -1)
@@ -85,15 +84,20 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 		_currentUserIndex = unisenseId;
 		_currentUser.PairWithPlayerInput(GetComponent<PlayerInput>());
 		
-		if (_currentUser.USBAttached && _currentUser.SetActiveDevice(DeviceType.DualSenseUSB)) return;
+		if (_currentUser.USBAttached && _currentUser.SetActiveDevice(DeviceType.DualSenseUSB)) return true;
 		else if(_currentUser.USBAttached) Debug.LogError("USB Failed To Connect");
 
-		if (_currentUser.BTAttached && _currentUser.SetActiveDevice(DeviceType.DualSenseBT)) return;
-		else if (_currentUser.BTAttached) Debug.LogError("BT Failed To Connect");
-
-		if (_currentUser.GenericAttached && _currentUser.SetActiveDevice(DeviceType.GenericGamepad)) return;
+		if (_currentUser.BTAttached && _currentUser.SetActiveDevice(DeviceType.DualSenseBT)) return true;
+		else if(_currentUser.BTAttached)
+		{
+			InputSystem.RemoveDevice(_currentUser.Devices.DualsenseBT);
+			Debug.LogWarning("BT DualSense Disconnected");
+		}
+       
+		if (_currentUser.GenericAttached && _currentUser.SetActiveDevice(DeviceType.GenericGamepad)) return true;
 		else if (_currentUser.GenericAttached) Debug.LogError("Generic Failed To Connect");
 
+		return false;
 	}
 
 
@@ -125,6 +129,9 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 
 	public void ResetUser()
     {
+		Camera.main.RenderWithShader(Shader.Find("NewUnlitShader"), "test");
+		Camera.main.Render();
+		Camera.main.enabled = false;
 		if (_currentUserIndex == -1) return;
 		DeviceType deviceType = _currentUser.ActiveDevice;
 		_currentUser.SetActiveDevice(DeviceType.None);
@@ -234,23 +241,21 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer, IManageable
 			case DeviceType.DualSenseBT:
 				byte[] rawDeviceCommand = GetRawCommand(_currentCommand);
 				DS5W_ReturnValue status = DS5W.setDeviceRawOutputState(ref _currentUser.Devices.contextBT, rawDeviceCommand, rawDeviceCommand.Length);
-				if (status != DS5W_ReturnValue.OK)
-				{
-					//if(_currentuser.USBAttached && _currentuser.SetActiveDevice(UniSense.DevConnections.DeviceType.DualSenseUSB))
-     //               {
-					//	Debug.Log("Failed to send output report succsesfully switched active device");
-					//	SendCommand();
-					//	return;
-     //               }
-					//if(NewUniSenseConnectionHandler.RemoveCurrentUser())
-     //               {
-					//	Debug.Log("Failed to send output report attempting to change active user");
-					//	SendCommand();
-					//	return;
-     //               }
-					Debug.LogError(status.ToString());
-				}
-                    break;
+                switch (status)
+                {
+                    case DS5W_ReturnValue.OK:
+                        break;
+                    
+					case DS5W_ReturnValue.E_DEVICE_REMOVED:
+                    case DS5W_ReturnValue.E_BT_COM:
+						Debug.LogWarning("BT Device Missing");
+                        break;
+
+                    default:
+						Debug.LogError(status.ToString());
+                        break;
+                }
+                break;
 
 			case DeviceType.DualSenseUSB:
 				_currentUser.Devices.DualsenseUSB?.ExecuteCommand(ref _currentCommand);
