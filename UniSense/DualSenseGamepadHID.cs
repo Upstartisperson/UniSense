@@ -44,6 +44,21 @@ namespace UnityEngine.InputSystem.DualSense
         public ButtonControl systemButton { get; private set; }
 
         /// <summary>
+        /// The Select Button
+        /// </summary>
+        [InputControl(name = "select", displayName = "Share", shortDisplayName = "SH")]
+        public ButtonControl select { get; private set; }
+
+        /// <summary>
+        /// The Start Button
+        /// </summary>
+        [InputControl(name = "start", displayName = "Options", shortDisplayName = "OPTs")]
+        public ButtonControl start { get; private set; }
+
+
+  
+
+        /// <summary>
         /// The small button below the Playstation logo button
         /// </summary>
         [InputControl(name = "micMuteButton", displayName = "Mic Mute Button", shortDisplayName = "Mic Mute")]
@@ -121,6 +136,8 @@ namespace UnityEngine.InputSystem.DualSense
             leftTriggerButton = GetChildControl<ButtonControl>("leftTriggerButton");
             rightTriggerButton = GetChildControl<ButtonControl>("rightTriggerButton");
             systemButton = GetChildControl<ButtonControl>("systemButton");
+            start = GetChildControl<ButtonControl>("start");
+            select = GetChildControl<ButtonControl>("select");
             micMuteButton = GetChildControl<ButtonControl>("micMuteButton");
             angularVelocity = GetChildControl<Vector3Control>("gyro");
             acceleration = GetChildControl<Vector3Control>("accel");

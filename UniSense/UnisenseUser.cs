@@ -255,6 +255,8 @@ namespace UniSense.Users
 					this.Devices.DualsenseBT = device as DualSenseBTGamepadHID;
 					this.SerialNumber = device.description.serial;
 					UserIndexFinder.AddValue(this.SerialNumber, UniSenseID);
+					OpenConnection(DeviceType.DualSenseBT);
+					CloseConnection(DeviceType.DualSenseBT, true);
 					break;
 				case DeviceType.DualSenseUSB:
 					if (USBAttached) return false;

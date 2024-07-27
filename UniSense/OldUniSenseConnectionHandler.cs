@@ -521,7 +521,7 @@ namespace UniSense.DevConnections {
 		private const int _fastEpsilon = 60000;
 		private const int _persistantEpsilon = 20;
 		private const decimal _timeEpsilon = 0.03m;
-		private static int _monoHash = 0;
+		//private static int _monoHash = 0;
 		public static bool IsInitialized { get; private set;}
 		private static bool _isMultiplayer;
 		private static bool _allowGenericGamepad;

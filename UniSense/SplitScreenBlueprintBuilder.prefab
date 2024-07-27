@@ -40,7 +40,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1507, y: 592}
+  m_SizeDelta: {x: 1494, y: 594}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8666359557156189126
 CanvasRenderer:
@@ -128,7 +128,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1507, y: 592}
+  m_SizeDelta: {x: 1494, y: 594}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &9205003374864338669
 CanvasRenderer:
@@ -298,7 +298,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1507, y: 592}
+  m_SizeDelta: {x: 1494, y: 594}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1058506084708039169
 CanvasRenderer:
@@ -1104,7 +1104,9 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 30
   m_TargetDisplay: 0
@@ -1117,10 +1119,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 4775703990840539867}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dbb81b50a9a3bc54eb24f8871361ae6b, type: 3}
+  m_Script: {fileID: 11500000, guid: 7b2761ebed38a5d479912154550f4256, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blueprint: {fileID: 11400000, guid: 3243e3395184e4c4bb333d170de62dad, type: 2}
+  blueprint: {fileID: 11400000, guid: 4ae8454030c7f2a49812d643fd696abd, type: 2}
   MaxPlayers: 16
 --- !u!222 &4775703990840539684
 CanvasRenderer:
@@ -1657,7 +1659,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1507, y: 592}
+  m_SizeDelta: {x: 1494, y: 594}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1992648262264854600
 CanvasRenderer:

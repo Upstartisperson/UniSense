@@ -4,6 +4,7 @@ using UnityEngine;
 using UniSense.Users;
 using UnityEngine.InputSystem;
 using UniSense.Management;
+using DeviceType = UniSense.Utilities.DeviceType;
 public class UniSensePlayer 
 {
     public static UniSensePlayer[] players;
@@ -16,6 +17,8 @@ public class UniSensePlayer
     public GameObject PlayerObject;
     public bool HasCam;
     public bool Active;
+
+    public DeviceType DeviceType { get { return (UnisenseId == -1) ? DeviceType.None : UniSenseUser.Users[UnisenseId].ActiveDevice; } }
     public static void Initialize(int maxPlayers)
     {
 
