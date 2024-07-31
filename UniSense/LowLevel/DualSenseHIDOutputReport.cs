@@ -56,7 +56,7 @@ namespace UniSense.LowLevel
         }
         [FieldOffset(0)] public InputDeviceCommand baseCommand;
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 0)] public byte reportId;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 0)] public byte reportId; //TODO: Might Be a better way to identify controllers look into it
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 1)] public Flags1 flags1;
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 2)] public Flags2 flags2;
 
@@ -73,7 +73,7 @@ namespace UniSense.LowLevel
 
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 37)] public byte powerReduction;
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 39)] public LedFlags ledFlags;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 39)] public byte LedFlags1;//LedFlags ledFlags;
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 42)] public byte ledPulseOption;
 
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 43)] public InternalPlayerLedBrightness playerLedBrightness;
@@ -84,6 +84,7 @@ namespace UniSense.LowLevel
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 47)] public byte lightBarBlue;
         public FourCC typeStatic => Type;
 
+        #region test
         public void SetMotorSpeeds(float lowFreq, float highFreq)
         {
             flags1 |= Flags1.MainMotors1 | Flags1.MainMotors2;
@@ -192,21 +193,29 @@ namespace UniSense.LowLevel
         public void SetLightBarColor(Color color)
         {
             flags2 |= Flags2.SetLightBarColor;
-            ledFlags |= LedFlags.LightBarFade;
+           // ledFlags |= LedFlags.LightBarFade;
             ledPulseOption = 0x02;
             lightBarRed = (byte)Mathf.Clamp(color.r * 255, 0, 255);
             lightBarGreen = (byte)Mathf.Clamp(color.g * 255, 0, 255);
             lightBarBlue = (byte)Mathf.Clamp(color.b * 255, 0, 255);
         }
 
-       
+        #endregion
+
+        public void SetReportId(byte Id)
+        {
+           // reportId = Id;
+        }
 
         public void SetPlayerLedState(PlayerLedState state, PlayerLedBrightness brightness)
         {
+           
+
             flags2 |= Flags2.PlayerLed;
             ledPulseOption = 0x02;
             playerLedState = state.Value;
-            ledFlags |= LedFlags.PlayerLedBrightness;
+            LedFlags1 = 0x03;
+            //ledFlags |= LedFlags.PlayerLedBrightness;
             ledPulseOption = 0x02;
             switch (brightness)
             {
@@ -226,7 +235,7 @@ namespace UniSense.LowLevel
 
         public void DisableLightBarAndPlayerLed()
         {
-            ledFlags |= LedFlags.LightBarFade;
+           // ledFlags |= LedFlags.LightBarFade;
             ledPulseOption = 0x01;
         }
        

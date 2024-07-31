@@ -21,8 +21,7 @@ namespace UniSense.PlayerManager
     {
         SendMessages = 0,
         BroadCastMessages = 1,
-        //InvokeUnityEvents,
-        InvokeCSharpEvents = 2
+        None = 2
     }
 
 
@@ -164,8 +163,7 @@ namespace UniSense.PlayerManager
             if (_initTimer > 50)
             {
                 UniSensePlayer.Initialize(_MaxPlayers);
-                _players.Add(new UniSensePlayer(_nextPlayerId++, -1, _PlayerPrefab));
-                UpdateSplitScreen();
+
                 InputSystem.onAfterUpdate -= QueueInit;
                 UniSenseConnectionHandler.InitializeMultiplayer(this, _AllowMouseKeyboard, _AllowGeneric);
                 Debug.Log("Initialization successful");
@@ -190,13 +188,25 @@ namespace UniSense.PlayerManager
                 case DualSenseBTGamepadHID:
                     deviceKey = device.description.serial;
                     break;
+
                 case DualSenseUSBGamepadHID:
                     deviceKey = device.deviceId.ToString();
                     break;
-                default:
+
+                case Gamepad:
                     if (!_AllowGeneric) return;
                     deviceKey = device.deviceId.ToString();
                     break;
+
+                case Mouse:
+                    JoinMouseKeyboardPlayer(_PlayerPrefab);
+                    return;
+                   
+                case Keyboard:
+                    JoinMouseKeyboardPlayer(_PlayerPrefab);
+                    return;
+
+               default : return;
             }
             if(!UniSenseUser.Find(deviceKey, out int unisenseId))
             {
@@ -211,8 +221,11 @@ namespace UniSense.PlayerManager
         public void InitilizeUsers()
         {
             if (_JoinBehavoir != JoinBehavoir.JoinPlayersAutomatically) return;
+            if(_AllowMouseKeyboard) JoinMouseKeyboardPlayer(_PlayerPrefab);
+            
             for (int i = 0; i < _users.Length; i++)
             {
+                
                 if (_users[i].IsReadyToConnect)
                 {
                     JoinPlayer(i, _PlayerPrefab);
@@ -227,6 +240,36 @@ namespace UniSense.PlayerManager
                 if (_players[i].UnisenseId == unisenseId) return i;
             }
             return -1;
+        }
+
+        private void NotifyPlayerJoined(int playerId)
+        {
+            switch (notificationBehavoir)
+            {
+                case NotificationBehavoir.SendMessages:
+                    SendMessage("OnPlayerJoind", playerId, SendMessageOptions.DontRequireReceiver);
+                    break;
+                case NotificationBehavoir.BroadCastMessages:
+                    BroadcastMessage("OnPlayerJoind", playerId, SendMessageOptions.DontRequireReceiver);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private void NotifyPlayerLeft(int playerId)
+        {
+            switch (notificationBehavoir)
+            {
+                case NotificationBehavoir.SendMessages:
+                    SendMessage("OnPlayerLeft", playerId, SendMessageOptions.DontRequireReceiver);
+                    break;
+                case NotificationBehavoir.BroadCastMessages:
+                    BroadcastMessage("OnPlayerLeft", playerId, SendMessageOptions.DontRequireReceiver);
+                    break;
+                default:
+                    break;
+            }
         }
 
         public void OnUserAdded(int unisenseId)
@@ -252,6 +295,7 @@ namespace UniSense.PlayerManager
             if (playerIndex != -1)
             {
                 _players[playerIndex].RemoveUser();
+                
                 return;
             }
             Debug.LogError("No PlayerFound With User Id (unisenseId)");
@@ -270,29 +314,49 @@ namespace UniSense.PlayerManager
             }
             _players.Add(new UniSensePlayer(_nextPlayerId++, unisenseId, playerPrefab));
             UpdateSplitScreen();
+            NotifyPlayerJoined(_nextPlayerId - 1);
+            return _players[_players.Count - 1];
+        }
+
+        public UniSensePlayer JoinMouseKeyboardPlayer(GameObject playerPrefab)
+        {
+            for (int i = 0; i < _players.Count; i++)
+            {
+                if (_players[i].Active) continue;
+                _players[i].SetMouseKeyboard();
+                UpdateSplitScreen();
+                return _players[i];
+            }
+            _players.Add(new UniSensePlayer(_nextPlayerId++, -1, playerPrefab));
+            _players[_players.Count - 1].SetMouseKeyboard();
+            UpdateSplitScreen();
             return _players[_players.Count - 1];
         }
 
         public bool RemovePlayer(int playerId)
         {
-            if (_players.Count == 1)
-            {
-                _players[0].RemoveUser();
-                return true;
-            }
 
             for (int i = 0; i < _players.Count; i++)
             {
                 if (_players[i].PlayerId == playerId)
                 {
+                    NotifyPlayerLeft(playerId);
                     _players[i].Destroy();
                     _players.RemoveAt(i);
                     UpdateSplitScreen();
+                    
                     return true;
                 }
             }
             return false;
         }
+
+        public Rect TranslateToUV(Rect rect, Vector2 screenSize)
+        {
+            rect.position = new Vector2((screenSize.x / 2) + rect.position.x - (rect.size.x / 2), (screenSize.y / 2) + rect.position.y - (rect.size.y / 2));
+            return rect;
+        }
+
         public void UpdateSplitScreen()
         {
 
@@ -300,52 +364,68 @@ namespace UniSense.PlayerManager
 
             if (_customSplitScreen)
             {
-                throw new System.Exception("Not Implemented Exception");
-            }
-            else
-            {
-                int numScreens = (_SetFixedNumber) ? _NumScreens : _players.Count;
-                int countX = Mathf.RoundToInt(Mathf.Sqrt(numScreens));
-                int countY = Mathf.CeilToInt(Mathf.Sqrt(numScreens));
-                float sizeX = _ScreenSpace.width / countX;
-                float sizeY = _ScreenSpace.height / countY;
-
-                float rectHeight = sizeY;
-                float rectWidth = sizeX;
+               if (_customBlueprint != null)
+               {
+                   // Rect[][] rects =_customBlueprint.RetriveDefualt();
+                    _customBlueprint.Recover();
+                    
 
 
+                    int screens = (_SetFixedNumber) ? _NumScreens : _players.Count;
+                    
+                    Rect[] rects = _customBlueprint.rects[screens -1];
 
-                if (_MaintianAscpectRatio)
-                {
-                    float aspectRatio = _ScreenSpace.width / _ScreenSpace.height;
-                    if (Mathf.Abs(aspectRatio - (rectWidth / rectHeight)) > 0.00001f)
+                    for (int i = 0; i < _players.Count; i++)
                     {
-                        if (aspectRatio < rectWidth / rectHeight)
-                        {
-                            rectWidth = rectHeight * aspectRatio;
-                        }
-                        else
-                        {
-                            rectHeight = rectWidth / aspectRatio;
-                        }
+                        _players[i].SetRect(TranslateToUV(rects[i], _ScreenSpace.size));
                     }
-
+                    gameObject.GetComponent<Camera>().enabled = true;
+                    Camera.onPostRender += DisableCam;
+                    return;
                 }
+                Debug.LogError("Custom Blueprint Not Found, Reverting To Default");
+                _customSplitScreen = false;
+            }
+           
+            int numScreens = (_SetFixedNumber) ? _NumScreens : _players.Count;
+            int countX = Mathf.RoundToInt(Mathf.Sqrt(numScreens));
+            int countY = Mathf.CeilToInt(Mathf.Sqrt(numScreens));
+            float sizeX = _ScreenSpace.width / countX;
+            float sizeY = _ScreenSpace.height / countY;
 
-                for (int i = 0; i < _players.Count; i++)
+            float rectHeight = sizeY;
+            float rectWidth = sizeX;
+
+            if (_MaintianAscpectRatio)
+            {
+                float aspectRatio = _ScreenSpace.width / _ScreenSpace.height;
+                if (Mathf.Abs(aspectRatio - (rectWidth / rectHeight)) > 0.00001f)
                 {
-                    float x = _ScreenSpace.xMin + ((i % countX) * sizeX + sizeX / 2);
-
-                    float y = _ScreenSpace.yMax - ((int)(i / countX) * sizeY + (sizeY / 2));
-
-                    Rect rect = new Rect(0, 0, rectWidth, rectHeight);
-                    rect.center = new Vector2(x, y);
-                    _players[i].SetRect(rect);
+                    if (aspectRatio < rectWidth / rectHeight)
+                    {
+                        rectWidth = rectHeight * aspectRatio;
+                    }
+                    else
+                    {
+                        rectHeight = rectWidth / aspectRatio;
+                    }
                 }
-                gameObject.GetComponent<Camera>().enabled = true;
-                Camera.onPostRender += DisableCam;
+
             }
 
+            for (int i = 0; i < _players.Count; i++)
+            {
+                float x = _ScreenSpace.xMin + ((i % countX) * sizeX + sizeX / 2);
+
+                float y = _ScreenSpace.yMax - ((int)(i / countX) * sizeY + (sizeY / 2));
+
+                Rect rect = new Rect(0, 0, rectWidth, rectHeight);
+                rect.center = new Vector2(x, y);
+                _players[i].SetRect(rect);
+            }
+            gameObject.GetComponent<Camera>().enabled = true;
+            Camera.onPostRender += DisableCam;
+            
         }
 
 

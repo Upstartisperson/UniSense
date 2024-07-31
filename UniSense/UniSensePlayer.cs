@@ -17,8 +17,9 @@ public class UniSensePlayer
     public GameObject PlayerObject;
     public bool HasCam;
     public bool Active;
+    public bool HasMouseKeyboard;
 
-    public DeviceType DeviceType { get { return (UnisenseId == -1) ? DeviceType.None : UniSenseUser.Users[UnisenseId].ActiveDevice; } }
+    public DeviceType DeviceType { get { return (UnisenseId == -1) ? ((HasMouseKeyboard) ? DeviceType.MouseKeyboard : DeviceType.None) : UniSenseUser.Users[UnisenseId].ActiveDevice; } }
     public static void Initialize(int maxPlayers)
     {
 
@@ -31,6 +32,7 @@ public class UniSensePlayer
             Debug.Break();
         }
     }
+    
     public UniSensePlayer(int playerId, int unisenseId, GameObject playerPrefab)
     {
        
@@ -49,9 +51,12 @@ public class UniSensePlayer
         }
         Active = true;
         HasCam = PlayerObject.TryGetComponent<Camera>(out PlayerCamera);
-        if(unisenseId != -1) _singleplayerHandler.SetCurrentUser(unisenseId);
-        else Active = false;
-        
+        if (unisenseId != -1) _singleplayerHandler.SetCurrentUser(unisenseId);
+        else
+        {
+            Active = false;
+            PlayerObject.GetComponent<PlayerInput>().user.UnpairDevices();
+        }
         UnisenseId = unisenseId;
         PlayerId = playerId;
     }
@@ -60,21 +65,31 @@ public class UniSensePlayer
 
     public bool SetUser(int unisenseId)
     {
-        if(!_singleplayerHandler.SetCurrentUser(unisenseId)) return false;
+        HasMouseKeyboard = false;
+        if (!_singleplayerHandler.SetCurrentUser(unisenseId)) return false;
         UnisenseId = unisenseId;
         Active = true;
         return true;
     }
 
+    public void SetMouseKeyboard()
+    {
+        RemoveUser();
+        _singleplayerHandler.SetMouseKeyboard();
+        HasMouseKeyboard = true;
+        Active = true;
+    }
+
     public void SetRect(Rect rect)
     {
         if (HasCam) PlayerCamera.rect = rect;
+        
     }
 
     public void RemoveUser()
     {
         _singleplayerHandler.SetNoCurrentUser();
-        Active = false;
+        if(!HasMouseKeyboard) Active = false;
     }
 
     public void Destroy()

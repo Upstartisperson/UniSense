@@ -22,6 +22,7 @@ using DeviceType = UniSense.Utilities.DeviceType;
 public class DualSense : MonoBehaviour, IHandleSingleplayer
 {
     private int _currentUserIndex = -1;
+	public bool Multiplayer;
     public bool AllowKeyboardMouse;
     public bool AllowGenericController;
 	private int _initTimer = 0;
@@ -74,8 +75,18 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer
 		//if (_currentUser.USBAttached) _currentUser.SetActiveDevice(UniSense.DevConnections.DeviceType.GenericGamepad);
   //  }
 
+	public void SetMouseKeyboard()
+    {
+		PlayerInput player = GetComponent<PlayerInput>();
+		player.user.UnpairDevices();
+		player.SwitchCurrentControlScheme(new InputDevice[] { Mouse.current, Keyboard.current });
+
+    }
+
+
     public bool SetCurrentUser(int unisenseId)
     {
+		
 		Debug.Log("Current User Changed From: " + _currentUserIndex + "To: " + unisenseId); //TODO: Remove Debug Log
 		if(_currentUserIndex != -1)
         {
@@ -198,13 +209,14 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer
 	public void SetMotorSpeeds(float lowFrequency, float highFrequency) => _currentCommand.SetMotorSpeeds(lowFrequency, highFrequency);
 	public void ResetMotorSpeeds() => SetMotorSpeeds(0f, 0f);
 
+	public void SetReportId(byte reportId) => _currentCommand.SetReportId(reportId);
 	public void ResetLightBarColor() => SetLightBarColor(Color.black);
 
 	public void SetMicLEDState(DualSenseMicLedState micLedState) => _currentCommand.SetMicLedState(micLedState);
 	public void ResetLEDs() => _currentCommand.DisableLightBarAndPlayerLed();
 
 	public void SetPlayerLED(PlayerLedBrightness brightness, PlayerLED playerLED, bool fade = false) => _currentCommand.SetPlayerLedState(new PlayerLedState((byte)playerLED, fade), brightness);
-
+	public void SetPlayerLED(PlayerLedBrightness brightness, PlayerLedState playerLEDState) => _currentCommand.SetPlayerLedState(playerLEDState, brightness);
 
 	public void ResetTriggersState()
 	{

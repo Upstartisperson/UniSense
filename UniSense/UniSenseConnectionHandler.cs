@@ -274,6 +274,7 @@ namespace UniSense.Connections
 							break;
 
 						case Gamepad:
+							if (!_allowGenericGamepad) return;
 							if (!UniSenseUser.InitUser(device, DeviceType.GenericGamepad, out unisenseId))
 							{
 								Debug.LogError("failed to initialize Generic user");
@@ -347,7 +348,8 @@ namespace UniSense.Connections
 								}
 							}
 						}
-						_users[unisenseId].ClearUser(false);
+						 _users[unisenseId].ClearUser(false);
+						if (_allowKeyboardMouse && !_isMultiplayer) _handleSingleplayer.SetMouseKeyboard();
 					}
 					else
 					{

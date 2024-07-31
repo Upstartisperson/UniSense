@@ -40,6 +40,7 @@ namespace UniSense.Management
 		public void OnCurrentUserModified(UserChange change);
 		public bool SetCurrentUser(int uniSenseId);
 		public void SetNoCurrentUser();
+		public void SetMouseKeyboard();
 	
 	}
 

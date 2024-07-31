@@ -16,6 +16,7 @@ namespace UniSense.Utilities
 		DualSenseBT,
 		DualSenseUSB,
 		GenericGamepad,
+		MouseKeyboard,
 		None
 	}
 	public class UniSenseDevice

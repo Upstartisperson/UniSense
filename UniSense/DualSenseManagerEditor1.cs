@@ -8,6 +8,7 @@ namespace UniSense.PlayerManager
     [CustomEditor(typeof(DualSenseManager))]
     public class DualSenseManagerEditor1 : Editor
     {
+        private bool DebugShown = true;
         public override void OnInspectorGUI()
         {
             EditorGUI.BeginChangeCheck();
@@ -41,8 +42,10 @@ namespace UniSense.PlayerManager
         private void DoDebugUI()
         {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Debug Info"), EditorStyles.boldLabel);
-            EditorGUI.BeginDisabledGroup(true);
+            DebugShown = EditorGUILayout.Foldout(DebugShown, "Debug Info", true);
+            if (!DebugShown) return;
+          //  EditorGUI.BeginDisabledGroup(true);
+         
 
             UniSensePlayer[] players = (target as DualSenseManager).Players.ToArray();
             if (players.Length == 0)
@@ -56,9 +59,18 @@ namespace UniSense.PlayerManager
                     int id = players[i].PlayerId;
                     
                     EditorGUILayout.LabelField("Player #|Id: " + i +"|" + id + "; U.S. Id: " + players[i].UnisenseId + "; Active = " + players[i].Active + "; Type = " + players[i].DeviceType );
+                    if(GUILayout.Button("Remove Player"))
+                    {
+                       
+                        EditorGUI.indentLevel++;
+                        (target as DualSenseManager).RemovePlayer(id);
+                        EditorGUI.indentLevel--;
+                       
+
+                    } 
                 }
             }
-            EditorGUI.EndDisabledGroup();
+           // EditorGUI.EndDisabledGroup();
         }
 
         private void DoNotificationSectionUI()

@@ -92,20 +92,25 @@ namespace UniSense
     }
     public enum PlayerLED : byte
     {
-        Player1 = 0x10,
-        Player2 = 0x08,
+        Player1 = 0x01,
+        Player2 = 0x02,
         Player3 = 0x04,
-        Player4 = 0x02,
-        Player5 = 0x01
+        Player4 = 0x08,
+        Player5 = 0x10,
+        
+       
+        
+        
     }
 
     public struct PlayerLedState
     {
-        private const byte LED1 = 0x10;
-        private const byte LED2 = 0x08;
+        private const byte LED1 = 0x01;
+        private const byte LED5 = 0x10;
+        private const byte LED4 = 0x08;
         private const byte LED3 = 0x04;
-        private const byte LED4 = 0x02;
-        private const byte LED5 = 0x01;
+        private const byte LED2 = 0x02;
+
         private const byte LED_MASK = LED1 | LED2 | LED3 | LED4 | LED5;
 
         private const byte FADE = 0x40;
@@ -125,7 +130,31 @@ namespace UniSense
 
         public PlayerLedState(byte led, bool fade = false)
         {
-            Value = (byte)(led & LED_MASK);
+            byte playerLed;
+            switch ((PlayerLED)led)
+            {
+                case PlayerLED.Player5:
+                    playerLed = LED_MASK;
+                    break;
+                case PlayerLED.Player4:
+                    playerLed = LED1 | LED2 | LED4 | LED5;
+                    break;
+                case PlayerLED.Player3:
+                    playerLed = LED1 | LED3 | LED5;
+                    break;
+                case PlayerLED.Player2:
+                    playerLed = LED2 | LED4;
+                    break;
+                case PlayerLED.Player1:
+                    playerLed = LED3;
+                    break;
+                default:
+                    playerLed = 0;
+                    break;
+            }
+
+
+            Value = (byte)(playerLed & LED_MASK);
             if (fade) Value |= FADE;
         }
     }
