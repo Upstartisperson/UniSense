@@ -16,17 +16,23 @@ using UniSense.Connections;
 using UniSense.PlayerManager;
 using DeviceType = UniSense.Utilities.DeviceType;
 
-//TODO: Finish this
-//TODO: There Was a bug that I can't replicate anymore. when bt dissconeted and usb was attached when two players were instatnatied with the manager,
-//for whatever reason user.connection open would be set to false and no output commands would be sent
+
 public class DualSense : MonoBehaviour, IHandleSingleplayer
 {
     private int _currentUserIndex = -1;
-	public bool Multiplayer;
+	public bool IsMultiplayer = false;
     public bool AllowKeyboardMouse;
     public bool AllowGenericController;
 	private int _initTimer = 0;
+	public PlayerLED _playerLedNumber = PlayerLED.None;
+	public bool EnablePlayerLED;
+
+
+	public Color LightBarColor = Color.black;
+
+	public bool LEDModifyed = false;
 	
+
     private ref UniSenseUser _currentUser
     {
         get { return ref UniSenseUser.Users[_currentUserIndex]; }
@@ -39,24 +45,30 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer
 
 	public void Start()
     {
-		
+		if (!TryGetComponent(out PlayerInput input))
+		{
+			Debug.LogError("No PlayerInput Found");
+			Debug.Break();
+		}
 		if (DualSenseManager.Instance != null) //If DualSenseManager exists in the scene then let DualSenseManager handle initialization
         {
+			IsMultiplayer = true;
 			return;
         }
-        if (UniSenseConnectionHandler.IsInitialized) return;
+        if (UniSenseConnectionHandler.Initialized) return;
+		
 		QueueInit();
     }
 
     private void OnDestroy()
     {
-		if (_initTimer < 50 && _initTimer > 0) InputSystem.onAfterUpdate -= QueueInit;
+		if (_initTimer < 55 && _initTimer > 0) InputSystem.onAfterUpdate -= QueueInit;
     }
 
     private void QueueInit()
     {
 		if (_initTimer++ == 0) InputSystem.onAfterUpdate += QueueInit;
-		if(_initTimer > 50)
+		if(_initTimer > 55)
         {
 			InputSystem.onAfterUpdate -= QueueInit;
 			UniSenseConnectionHandler.InitializeSingleplayer(this, AllowKeyboardMouse, AllowGenericController);
@@ -83,6 +95,36 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer
 
     }
 
+	public void SetPlayerNumber(int num)
+    {
+		
+        switch (num)
+        {
+			case 1:
+				_playerLedNumber = PlayerLED.Player1;
+				break;
+			case 2:
+				_playerLedNumber = PlayerLED.Player2;
+				break;
+			case 3:
+				_playerLedNumber = PlayerLED.Player3;
+				break;
+			case 4:
+				_playerLedNumber = PlayerLED.Player4;
+				break;
+			case 5:
+				_playerLedNumber = PlayerLED.Player5;
+				break;
+				
+			default:
+				_playerLedNumber = PlayerLED.None; 
+				break;
+        }
+		
+		SetPlayerLED(PlayerLedBrightness.High, _playerLedNumber);
+		LEDModifyed = true;
+
+    }
 
     public bool SetCurrentUser(int unisenseId)
     {
@@ -133,7 +175,7 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer
 				break;
           
             default:
-				Debug.LogError("Error: " + change.ToString() + "Should not be called in OnCurrentUserModified"); //TODO: Remove
+				Debug.LogError("Error: " + change.ToString() + "Should not be called in OnCurrentUserModified"); //TODO: Remove Debug
                 break;
         }
 		
@@ -141,9 +183,6 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer
 
 	public void ResetUser()
     {
-		Camera.main.RenderWithShader(Shader.Find("NewUnlitShader"), "test");
-		Camera.main.Render();
-		Camera.main.enabled = false;
 		if (_currentUserIndex == -1) return;
 		DeviceType deviceType = _currentUser.ActiveDevice;
 		_currentUser.SetActiveDevice(DeviceType.None);
@@ -169,13 +208,6 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer
 
     #endregion
 
-    #region MultiPlayer
-    public void SetCurrentUser_M(int unisenseId) //TODO: Is this useless?
-    {
-        _currentUserIndex = unisenseId;
-    }
-	#endregion
-
 	private byte[] GetRawCommand(DualSenseHIDOutputReport command)
 	{
 		byte[] inbuffer = command.RetriveCommand();
@@ -194,22 +226,20 @@ public class DualSense : MonoBehaviour, IHandleSingleplayer
 	private bool _userConnected => _currentUser.ConnectionOpen;
 
 
-
 	public void ResetHaptics()
 	{
-		//TODO : Implement a check to see if necessary
 		_currentCommand = DualSenseHIDOutputReport.Create();
 		_currentCommand.ResetMotorSpeeds();
 		_currentCommand.SetLeftTriggerState(new DualSenseTriggerState());
 		_currentCommand.SetRightTriggerState(new DualSenseTriggerState());
-		//InputSystem.onEvent
+	
 		SendCommand();
 	}
 	public void SetLightBarColor(Color color) => _currentCommand.SetLightBarColor(color);
 	public void SetMotorSpeeds(float lowFrequency, float highFrequency) => _currentCommand.SetMotorSpeeds(lowFrequency, highFrequency);
 	public void ResetMotorSpeeds() => SetMotorSpeeds(0f, 0f);
 
-	public void SetReportId(byte reportId) => _currentCommand.SetReportId(reportId);
+	//public void SetReportId(byte reportId) => _currentCommand.SetReportId(reportId);
 	public void ResetLightBarColor() => SetLightBarColor(Color.black);
 
 	public void SetMicLEDState(DualSenseMicLedState micLedState) => _currentCommand.SetMicLedState(micLedState);

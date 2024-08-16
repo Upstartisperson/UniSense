@@ -6,14 +6,14 @@ using UnityEngine.InputSystem.Utilities;
 
 namespace UniSense.LowLevel
 {
-   
+
     [StructLayout(LayoutKind.Explicit, Size = kSize)]
     internal unsafe struct DualSenseHIDOutputReport : IInputDeviceCommandInfo
     {
         public static FourCC Type => new FourCC('H', 'I', 'D', 'O');
 
         internal const int kSize = InputDeviceCommand.BaseCommandSize + 48;
-       
+
         internal const int kTriggerParamSize = 9;
         internal const int kReportId = 2;
 
@@ -73,7 +73,7 @@ namespace UniSense.LowLevel
 
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 37)] public byte powerReduction;
 
-        [FieldOffset(InputDeviceCommand.BaseCommandSize + 39)] public byte LedFlags1;//LedFlags ledFlags;
+        [FieldOffset(InputDeviceCommand.BaseCommandSize + 39)] public LedFlags ledFlags;
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 42)] public byte ledPulseOption;
 
         [FieldOffset(InputDeviceCommand.BaseCommandSize + 43)] public InternalPlayerLedBrightness playerLedBrightness;
@@ -102,7 +102,7 @@ namespace UniSense.LowLevel
             {
                 flags1 &= ~Flags1.MainMotors2;
             }
-            
+
         }
 
         public void SetMicLedState(DualSenseMicLedState state)
@@ -193,7 +193,7 @@ namespace UniSense.LowLevel
         public void SetLightBarColor(Color color)
         {
             flags2 |= Flags2.SetLightBarColor;
-           // ledFlags |= LedFlags.LightBarFade;
+            ledFlags |= LedFlags.PlayerLedBrightness;
             ledPulseOption = 0x02;
             lightBarRed = (byte)Mathf.Clamp(color.r * 255, 0, 255);
             lightBarGreen = (byte)Mathf.Clamp(color.g * 255, 0, 255);
@@ -204,18 +204,16 @@ namespace UniSense.LowLevel
 
         public void SetReportId(byte Id)
         {
-           // reportId = Id;
+            // reportId = Id;
         }
 
         public void SetPlayerLedState(PlayerLedState state, PlayerLedBrightness brightness)
         {
-           
-
             flags2 |= Flags2.PlayerLed;
             ledPulseOption = 0x02;
             playerLedState = state.Value;
-            LedFlags1 = 0x03;
-            //ledFlags |= LedFlags.PlayerLedBrightness;
+            //LedFlags1 = 0x03;
+            ledFlags =  LedFlags.LightBarFade;
             ledPulseOption = 0x02;
             switch (brightness)
             {
@@ -235,11 +233,12 @@ namespace UniSense.LowLevel
 
         public void DisableLightBarAndPlayerLed()
         {
-           // ledFlags |= LedFlags.LightBarFade;
+            SetLightBarColor(Color.black);
+            playerLedState = 0;
             ledPulseOption = 0x01;
         }
-       
-       public byte[] RetriveCommand()
+
+        public byte[] RetriveCommand()
         {
             DualSenseHIDOutputReport myCommand = this;
             byte[] commandBytes = new byte[Marshal.SizeOf(typeof(DualSenseHIDOutputReport))];

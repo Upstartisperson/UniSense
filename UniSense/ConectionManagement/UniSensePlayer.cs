@@ -7,24 +7,34 @@ using UniSense.Management;
 using DeviceType = UniSense.Utilities.DeviceType;
 public class UniSensePlayer 
 {
-    public static UniSensePlayer[] players;
-    private static int _maxPlayers;
-    public int PlayerId;
-    public int UnisenseId;
-    private static PlayerInputManager _manager;
-    private IHandleSingleplayer _singleplayerHandler;
-    public Camera PlayerCamera;
+    public int PlayerId; //Id unique to player
+    public int UnisenseId; //UnisenseId of the connected UniSenseUser user
+    
     public GameObject PlayerObject;
-    public bool HasCam;
+   
     public bool Active;
     public bool HasMouseKeyboard;
 
-    public DeviceType DeviceType { get { return (UnisenseId == -1) ? ((HasMouseKeyboard) ? DeviceType.MouseKeyboard : DeviceType.None) : UniSenseUser.Users[UnisenseId].ActiveDevice; } }
-    public static void Initialize(int maxPlayers)
-    {
+    private static PlayerInputManager _manager;
+    private IHandleSingleplayer _singleplayerHandler;
+    private bool _hasCam;
+    private PlayerInput _playerInput;
 
-        _maxPlayers = maxPlayers;
-        players = new UniSensePlayer[_maxPlayers];
+    /// <summary>
+    /// Used for debug display on <see cref="UniSense.PlayerManager.DualSenseManager"/>
+    /// </summary>
+    public DeviceType DeviceType 
+    { 
+        get 
+        { 
+            return UnisenseId == -1 ? HasMouseKeyboard ? DeviceType.MouseKeyboard 
+                                                       : DeviceType.None 
+                                    : UniSenseUser.Users[UnisenseId].ActiveDevice;
+        } 
+    }
+
+    public static void Initialize()
+    {       
         if(PlayerInputManager.instance != null) _manager = PlayerInputManager.instance;
         else
         {
@@ -33,6 +43,31 @@ public class UniSensePlayer
         }
     }
     
+    public static UniSensePlayer ConnectPlayer(GameObject playerObject, int playerId)
+    {
+        return new UniSensePlayer(playerObject, playerId);
+    }
+
+    private UniSensePlayer(GameObject playerObject, int playerId)
+    {
+        //if (_manager == null)
+        //{
+        //    Debug.LogError("Initialize UnisensePlayer First");
+        //    Debug.Break();
+        //}
+
+        if (!playerObject.TryGetComponent<IHandleSingleplayer>(out _singleplayerHandler))
+        {
+            Debug.LogError("Missing SinglePlayer Handler");
+            Debug.Break(); 
+        }
+
+        Active = false;
+        _playerInput = playerObject.GetComponent<PlayerInput>();
+        _hasCam = _playerInput.camera != null;
+        PlayerId = playerId;
+        PlayerObject = playerObject;
+    }
     public UniSensePlayer(int playerId, int unisenseId, GameObject playerPrefab)
     {
        
@@ -50,8 +85,11 @@ public class UniSensePlayer
             Debug.Break();
         }
         Active = true;
-        HasCam = PlayerObject.TryGetComponent<Camera>(out PlayerCamera);
+        _playerInput = PlayerObject.GetComponent<PlayerInput>();
+        _hasCam = _playerInput.camera != null;
         if (unisenseId != -1) _singleplayerHandler.SetCurrentUser(unisenseId);
+        
+        
         else
         {
             Active = false;
@@ -60,6 +98,8 @@ public class UniSensePlayer
         UnisenseId = unisenseId;
         PlayerId = playerId;
     }
+
+    public void SetPlayerNum(int num) => _singleplayerHandler.SetPlayerNumber(num);
 
     public void ModifyUser(UserChange change) => _singleplayerHandler.OnCurrentUserModified(change);
 
@@ -82,7 +122,7 @@ public class UniSensePlayer
 
     public void SetRect(Rect rect)
     {
-        if (HasCam) PlayerCamera.rect = rect;
+        if (_hasCam) _playerInput.camera.rect = rect;
         
     }
 

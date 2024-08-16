@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UniSense.DevConnections;
 using UnityEngine;
 using UniSense.LowLevel;
 using UnityEngine.InputSystem;
@@ -76,63 +75,67 @@ namespace UniSense.pair
 			return (diff > altDiff) ? altDiff : diff; //altDiff and diff can both be zero, but in that case zero will still be returned so no issue there;
 		}
 
+		/// <summary>
+		/// This method will compare the input report of the provided USB DualSense with all available connected BT DualSenses.
+		/// This is needed since ONE single DualSense controller can be connected via bluetooth and USB SIMUTAIONOULY. 
+		/// When this occurs one physical controller appears to unity (and windows) as two equally valid separate controllers.
+		/// This method compares persistent counters, reported battery level, and other things to determine if a newly connected USB DualSense is in fact a duplicate
+		/// controller that is already connected via bluetooth. 
+		/// 
+		/// Note. A BT dualsense needs to be connected before the USB dualsense in order for a duplicate controller to happen
+		/// </summary>
+		/// <param name="device"></param>
+		/// <returns></returns>
 		public static bool TryPair(DualSenseUSBGamepadHID device)
 		{
-			//List<DualSenseUSBGamepadHID> devicesToPair = _devicesToPair.ToList(); //Just use list from connection manage4r
-			//Queue<int> stillLookingForPair = new Queue<int>();
+			
 			for (int i = 0; i < _uniSenseUsers.Length ; i++)
 			{
 				if (!_uniSenseUsers[i].NeedsPair) continue;
 
 				DualSenseBTGamepadHID btDevice = _uniSenseUsers[i].Devices.DualsenseBT;
+
+				if (!btDevice.usbConnected.isPressed) continue; //Does the BT DualSense report that a USB version is connected
 				
-				Debug.Log("Batt: " + btDevice.batteryLevel.ReadValue());
-				if (btDevice.usbConnected.isPressed)
+				if (!GetCounters(btDevice, out uint inputFastCounter, out uint inputPersistentCounter, out uint inputFrameCounter))
 				{
-					if (!GetCounters(btDevice, out uint inputFastCounter, out uint inputPersistentCounter, out uint inputFrameCounter))
-					{
-						Debug.LogError("Error retrieving counters");
-						continue;
-					}
-
-					if (Math.Abs(btDevice.batteryLevel.ReadValue() - device.batteryLevel.ReadValue()) > 1) continue;
-
-					if (!GetCounters(device, out uint fastCounter, out uint persistentCounter, out uint frameCounter))
-					{
-						Debug.LogError("Error retrieving counters");
-						continue;
-					}
-
-					uint fastDelta = UintDelta(inputFastCounter, fastCounter, 4);
-					uint persistentDelta = UintDelta(inputPersistentCounter, persistentCounter, 4);
-					uint frameDelta = UintDelta(inputFrameCounter, frameCounter, 1);
-
-					if (fastDelta <= _fastEpsilon && persistentDelta <= _persistantEpsilon && frameDelta <= _frameEpsilon)
-					{
-						//Could multiply by the inverse to speed up but not worth readability cost
-						decimal fastTimepassed = (decimal)fastDelta / (decimal)_fastPerSecond;
-						decimal persistantTimepassed = (decimal)persistentDelta / (decimal)_persistentPerSecond;
-
-						decimal timeDelta = Math.Abs(fastTimepassed - persistantTimepassed);
-						if (timeDelta > _timeEpsilon) continue;
-
-
-						//Successfully matched the USB device to it's BT counterpart
-						_uniSenseUsers[i].AddDevice(device, DeviceType.DualSenseUSB);
-						if (OnUsbPaired != null) OnUsbPaired(i);
-						//_handleMultiplayer.OnUserModified(unisenseID, UserChange.USBAdded); //Removed since all it does is change the active device to USB in this situation. Since the BT device will continue to work while USB is connected it only needs to be swapped when and if the BT device is disconnected which is handled elsewhere  
-
-						
-						return true;
-					}
-
+					Debug.LogError("Error retrieving counters");
+					continue;
 				}
 
+				if (Math.Abs(btDevice.batteryLevel.ReadValue() - device.batteryLevel.ReadValue()) > 1) continue;
+
+				if (!GetCounters(device, out uint fastCounter, out uint persistentCounter, out uint frameCounter))
+				{
+					Debug.LogError("Error retrieving counters");
+					continue;
+				}
+
+				uint fastDelta = UintDelta(inputFastCounter, fastCounter, 4);
+				uint persistentDelta = UintDelta(inputPersistentCounter, persistentCounter, 4);
+				uint frameDelta = UintDelta(inputFrameCounter, frameCounter, 1);
+
+				if (fastDelta <= _fastEpsilon && persistentDelta <= _persistantEpsilon && frameDelta <= _frameEpsilon)
+				{
+					//Could multiply by the inverse to speed up but not worth readability cost
+					decimal fastTimepassed = (decimal)fastDelta / (decimal)_fastPerSecond;
+					decimal persistantTimepassed = (decimal)persistentDelta / (decimal)_persistentPerSecond;
+
+					decimal timeDelta = Math.Abs(fastTimepassed - persistantTimepassed);
+					if (timeDelta > _timeEpsilon) continue;
+
+
+					//Successfully matched the USB device to it's BT counterpart
+					_uniSenseUsers[i].AddDevice(device, DeviceType.DualSenseUSB);
+					if (OnUsbPaired != null) OnUsbPaired(i);
+
+					return true;
+				}
+				
 			}
 			if (OnPairFailed != null) OnPairFailed(device);
 			return false;
-
-
 		}
+
 	}
 }

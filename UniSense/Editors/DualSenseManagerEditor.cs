@@ -6,7 +6,7 @@ using UnityEditor;
 namespace UniSense.PlayerManager
 {
     [CustomEditor(typeof(DualSenseManager))]
-    public class DualSenseManagerEditor1 : Editor
+    public class DualSenseManagerEditor : Editor
     {
         private bool DebugShown = true;
         public override void OnInspectorGUI()
@@ -15,13 +15,13 @@ namespace UniSense.PlayerManager
             var setup = serializedObject.FindProperty(nameof(DualSenseManager._ManagerConfigured));
             if (!setup.boolValue)
             {
-                if(Application.isPlaying)
+                if (Application.isPlaying)
                 {
                     EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent("Manager Not Configured End Player To Configure"));
                     if (EditorGUI.EndChangeCheck()) serializedObject.ApplyModifiedProperties();
                     return;
                 }
-                if(GUILayout.Button("Configure Manager"))
+                if (GUILayout.Button("Configure Manager"))
                 {
                     var manager = (DualSenseManager)target;
                     manager.ConfigureManager();
@@ -44,8 +44,8 @@ namespace UniSense.PlayerManager
             EditorGUILayout.Space();
             DebugShown = EditorGUILayout.Foldout(DebugShown, "Debug Info", true);
             if (!DebugShown) return;
-          //  EditorGUI.BeginDisabledGroup(true);
-         
+            //  EditorGUI.BeginDisabledGroup(true);
+
 
             UniSensePlayer[] players = (target as DualSenseManager).Players.ToArray();
             if (players.Length == 0)
@@ -54,31 +54,29 @@ namespace UniSense.PlayerManager
             }
             else
             {
-                for(int i = 0; i < players.Length; i++)
+                for (int i = 0; i < players.Length; i++)
                 {
                     int id = players[i].PlayerId;
-                    
-                    EditorGUILayout.LabelField("Player #|Id: " + i +"|" + id + "; U.S. Id: " + players[i].UnisenseId + "; Active = " + players[i].Active + "; Type = " + players[i].DeviceType );
-                    if(GUILayout.Button("Remove Player"))
+
+                    EditorGUILayout.LabelField("Player #|Id: " + i + "|" + id + "; U.S. Id: " + players[i].UnisenseId + "; Active = " + players[i].Active + "; Type = " + players[i].DeviceType);
+                    if (GUILayout.Button("Remove Player"))
                     {
-                       
+
                         EditorGUI.indentLevel++;
                         (target as DualSenseManager).RemovePlayer(id);
                         EditorGUI.indentLevel--;
-                       
 
-                    } 
+
+                    }
                 }
             }
-           // EditorGUI.EndDisabledGroup();
+            // EditorGUI.EndDisabledGroup();
         }
 
         private void DoNotificationSectionUI()
         {
             var notificationBehavior = serializedObject.FindProperty(nameof(DualSenseManager.notificationBehavoir));
             EditorGUILayout.PropertyField(notificationBehavior);
-            var config = serializedObject.FindProperty(nameof(DualSenseManager._ManagerConfigured));
-            EditorGUILayout.PropertyField(config);
             switch ((NotificationBehavoir)notificationBehavior.intValue)
             {
                 case NotificationBehavoir.SendMessages:
@@ -99,7 +97,7 @@ namespace UniSense.PlayerManager
             EditorGUI.indentLevel++;
             switch ((JoinBehavoir)joinBehavoir.intValue)
             {
-                 case JoinBehavoir.JoinPlayersWhenJoinActionIsTriggered:
+                case JoinBehavoir.JoinPlayersWhenJoinActionIsTriggered:
                     var JoinAction = serializedObject.FindProperty(nameof(DualSenseManager._JoinAction));
                     EditorGUILayout.PropertyField(JoinAction);
                     goto case JoinBehavoir.JoinPlayersAutomatically;
@@ -138,7 +136,7 @@ namespace UniSense.PlayerManager
             {
                 var maintainAspect = serializedObject.FindProperty(nameof(DualSenseManager._MaintianAscpectRatio));
                 EditorGUILayout.PropertyField(maintainAspect);
-                
+
             }
             var fixedNumScreens = serializedObject.FindProperty(nameof(DualSenseManager._SetFixedNumber));
             EditorGUILayout.PropertyField(fixedNumScreens);

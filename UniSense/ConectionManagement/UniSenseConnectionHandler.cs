@@ -1,20 +1,9 @@
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Utilities;
-using UniSense.LowLevel;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine.InputSystem.LowLevel;
 using System.Runtime.InteropServices;
-using Unity.Collections.LowLevel.Unsafe;
-using WrapperDS5W;
-using UnityEngine.InputSystem.DualSense;
-using UnityEngine.Scripting;
-using System.Text;
 using UniSense.Management;
 using UniSense.Users;
 using UnityEditor;
-using UniSense;
 using UniSense.pair;
 using UnityEngine;
 using DeviceType = UniSense.Utilities.DeviceType;
@@ -23,24 +12,22 @@ namespace UniSense.Connections
 {
 	public static class UniSenseConnectionHandler
 	{
-		public static bool IsInitialized { get; private set; }
-		private static bool _isMultiplayer;
-		private static bool _allowGenericGamepad;
-		private static bool _allowKeyboardMouse;
-		private const int _maxPlayersDefualt = 16;
-		private static int _currentUserIndex = -1;
-		private static IManage _handleMultiplayer;
-		private static IHandleSingleplayer _handleSingleplayer;
-		private static PairQueue pairQueue = new PairQueue();
-		private static ref UniSenseUser[] _users { get { return ref UniSenseUser.Users; } }
+        #region Fields
+        public static bool Initialized { get; private set; } //Has the UniSenseConnectionHandler been initialized
+		private static bool _isMultiplayer; //Is the current game multiplayer
+		private static bool _allowGenericGamepad; //Are non-DualSense controllers able to connect;
+		private static bool _allowKeyboardMouse; //Are mouse and keyboard players allowed to connect
+		private static int _currentUnsId = -1; //UniSense Id of the current user (for single-player mode only)
+		private static IManageMultiPlayer _handleMultiplayer; //Reference to the multiplayer manager that initialized multiplayer
+		private static IHandleSingleplayer _handleSingleplayer; //Reference to the single player handler that initialized single player
+		private static PairQueue pairQueue = new PairQueue(); //Pairing queue used to queue DualSense USB devices for BT counterpart pairing
+		private static UniSenseUser[] _users { get { return UniSenseUser.Users; } }
+		public static UniSenseUser CurrentUser { get { return UniSenseUser.Users[_currentUnsId]; } }
 
-		public static ref UniSenseUser CurrentUser
-		{
-			get { return ref UniSenseUser.Users[_currentUserIndex]; }
-		}
+        #endregion
 
-		//This will automatically be run immediately before this class is accessed for the first time.
-		static UniSenseConnectionHandler()
+        #region Class Initialization & Destruction
+        static UniSenseConnectionHandler()
 		{
 			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			{
@@ -52,12 +39,15 @@ namespace UniSense.Connections
 			throw new Exception("Current Platform Not Supported");
 #endif
 			}
-			IsInitialized = false;
+			Initialized = false;
 
 			EnsureClosure();
 			InputSystem.onDeviceChange += OnDeviceChange;
 		}
 
+		/// <summary>
+		/// Ensures that this class shuts down properly
+		/// </summary>
 		private static void EnsureClosure()
 		{
 			EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
@@ -68,6 +58,11 @@ namespace UniSense.Connections
 		{
 			if (stateChange == PlayModeStateChange.ExitingPlayMode) Destroy();
 		}
+
+		/// <summary>
+		/// Terminates all hooked events, Closes all open connections. This method is important since if connected bluetooth DualSense devices aren't shut down properly memory leaks and unpredictable system behavior is possible
+		/// </summary>
+		/// <returns></returns>
 		private static bool Destroy()
 		{
 			UnisensePair.OnPairFailed -= UsbPairFailed;
@@ -77,9 +72,6 @@ namespace UniSense.Connections
 			InputSystem.onDeviceChange -= OnDeviceChange;
 			pairQueue.Exit();
 
-			//InputSystem.onAfterUpdate -= InputSystemUpdate;
-
-			//if (_deviceMatchQueued) InputSystem.onAfterUpdate -= MatchDevicesOnNextUpdate;
 			for (int i = 0; i < _users.Length; i++)
 			{
 				_users[i].ClearUser(true);
@@ -87,110 +79,114 @@ namespace UniSense.Connections
 			return true; //when called by EditorApplication.wantsToQuit returning true allows the application to exit
 		}
 
+		#endregion
+
+
 		/// <summary>
-		/// Initialize unisense in single player mode
+		/// Initialize UniSense in single-player mode. Example Call From  Script Inheriting <see cref="IHandleSingleplayer"/>:
+		/// <code>
+		/// bool initSucsesful = InitializeSingleplayer(this, true, false);
+		/// </code>
 		/// </summary>
-		/// <param name="singleplayerListener"></param>
-		/// <param name="allowKeyboardMouse"></param>
-		/// <param name="allowGenergicGamepad"></param>
+		/// <param name="singleplayerHandler">Reference to calling class "this" is proper usage </param>
+		/// <param name="allowKeyboardMouse">Should mouse and keyboard players be allowed to join</param>
+		/// <param name="allowGenergicGamepad">Should players with non DualSense controllers be allowed to join</param>
 		/// <returns>True if successful</returns>
-		public static bool InitializeSingleplayer(IHandleSingleplayer singleplayerListener, bool allowKeyboardMouse = false, bool allowGenergicGamepad = false)
+		public static bool InitializeSingleplayer(IHandleSingleplayer singleplayerHandler, bool allowKeyboardMouse = false, bool allowGenergicGamepad = false)
 		{
-			if (IsInitialized || singleplayerListener == null) return false;
-			IsInitialized = true;
-			_handleSingleplayer = singleplayerListener;
-			FinishInitialization(false, allowKeyboardMouse, allowGenergicGamepad, _maxPlayersDefualt);
-			if (_currentUserIndex != -1)
+			if (Initialized || singleplayerHandler == null) return false;
+			Initialized = true;
+			_handleSingleplayer = singleplayerHandler;
+			FinishInitialization(false, allowKeyboardMouse, allowGenergicGamepad);
+			if (_currentUnsId != -1)
 			{
-				_handleSingleplayer.SetCurrentUser(_currentUserIndex);
+				_handleSingleplayer.SetCurrentUser(_currentUnsId);
 				return true;
 			}
 			return false;
 		}
 
+
 		/// <summary>
-		/// Initialize unisense in multi player mode
+		/// Initialize UniSense in multi-player mode. Example Call From  Script Inheriting <see cref="IManageMultiPlayer"/>:
+		/// <code>
+		/// bool initSucsesful = InitializeMultiplayer(this, true, false);
+		/// </code>
 		/// </summary>
-		/// <param name="maxPlayers"></param>
-		/// <param name="multiplayerListener"></param>
-		/// <param name="allowKeyboardMouse"></param>
-		/// <param name="allowGenergicGamepad"></param>
+		/// <param name="multiplayerListener">Reference to calling class "this" is proper usage </param>
+		/// <param name="allowKeyboardMouse">Should mouse and keyboard players be allowed to join</param>
+		/// <param name="allowGenergicGamepad">Should players with non DualSense controllers be allowed to join</param>
 		/// <returns>True if successful</returns>
-		public static bool InitializeMultiplayer(IManage multiplayerListener, bool allowKeyboardMouse = false, bool allowGenergicGamepad = false, int maxPlayers = _maxPlayersDefualt)
+		public static bool InitializeMultiplayer(IManageMultiPlayer multiplayerListener, bool allowKeyboardMouse = false, bool allowGenergicGamepad = false)
 		{
-			if (IsInitialized || multiplayerListener == null) return false;
-			IsInitialized = true;
+			if (Initialized || multiplayerListener == null) return false;
+			Initialized = true;
 			_handleMultiplayer = multiplayerListener;
-			FinishInitialization(true, allowKeyboardMouse, allowGenergicGamepad, maxPlayers);
+			FinishInitialization(true, allowKeyboardMouse, allowGenergicGamepad);
 			multiplayerListener.InitilizeUsers();
 			return false;
 		}
 
-		private static void FinishInitialization(bool isMultiplayer, bool allowKeyboardMouse, bool allowGenergicGamepad, int maxPlayers)
+		/// <summary>
+		/// Does all initialization steps common to multiplayer and single player modes
+		/// </summary>
+		/// <param name="isMultiplayer"></param>
+		/// <param name="allowKeyboardMouse"></param>
+		/// <param name="allowGenergicGamepad"></param>
+		private static void FinishInitialization(bool isMultiplayer, bool allowKeyboardMouse, bool allowGenergicGamepad)
 		{
 			UnisensePair.OnPairFailed += UsbPairFailed;
 			UnisensePair.OnUsbPaired += OnUsbPaird;
-			UniSenseUser.init();
+		
 			_isMultiplayer = isMultiplayer;
 			_allowGenericGamepad = allowGenergicGamepad;
 			_allowKeyboardMouse = allowKeyboardMouse;
 
-			//TODO: Could Combine all three foreach loops into one would be easy because Gamepad.all contains usb and bt dualsense gamepads
-			//now a generic gamepad has the potentail to become the current user just need to modify that
+			Gamepad[] gamepads = Gamepad.all.ToArray(); //Find all gamepads connected to Unity's input system
 
-			Gamepad[] btGamepads = DualSenseBTGamepadHID.FindAll();
-			Gamepad[] usbGamepads = DualSenseUSBGamepadHID.FindAll();
-			Gamepad[] genericGamepads = Gamepad.all.ToArray();
+			if (gamepads == null || gamepads.Length == 0) return; //Check if at least one gamepad is connected
 
-			if (btGamepads != null && btGamepads.Length > 0)
-			{
-				foreach (Gamepad gamepad in btGamepads)
-				{
-					UniSenseUser.InitUser(gamepad, DeviceType.DualSenseBT);
-				}
-			}
+		    //Set up connected gamepads
+			foreach (Gamepad gamepad in gamepads)
+            {
+                switch (gamepad)
+                {
+					case DualSenseBTGamepadHID:
+						UniSenseUser.InitUser(gamepad, DeviceType.DualSenseBT);
+						InputSystem.EnableDevice(gamepad);
+						break;
+					case DualSenseUSBGamepadHID:
+						pairQueue.QueueDevice(gamepad as DualSenseUSBGamepadHID);
+						break;
+					default:
+						if (allowGenergicGamepad) UniSenseUser.InitUser(gamepad, DeviceType.GenericGamepad);
+						break;
+                }
+            }
 
-			if (usbGamepads != null && usbGamepads.Length > 0)
-			{
-				foreach (Gamepad gamepad in usbGamepads)
-				{
-					pairQueue.QueueDevice(gamepad as DualSenseUSBGamepadHID);
-				}
-			}
-
-			if (allowGenergicGamepad && genericGamepads != null && genericGamepads.Length > 0)
-			{
-				foreach (Gamepad gamepad in genericGamepads)
-				{
-					if (gamepad is DualSenseUSBGamepadHID) continue;
-					if (gamepad is DualSenseBTGamepadHID) continue;
-					UniSenseUser.InitUser(gamepad, DeviceType.GenericGamepad);
-				}
-			}
-
-
-			if (btGamepads != null && btGamepads.Length > 0)
-			{
-				foreach (Gamepad gamepad in btGamepads)
-				{
-					InputSystem.EnableDevice(gamepad);
-				}
-			}
-
-			if (FindNewCurrentUser(out int Id)) _currentUserIndex = Id;
-
+			if (!_isMultiplayer && FindNewCurrentUser(out int Id)) _currentUnsId = Id; //Set current user for single player mode
 		}
 
+		/// <summary>
+		/// Selects a current user out of all active UniSense users
+		/// </summary>
+		/// <param name="unisenseId">The UniSenseId of the new current user, -1 if no user is found</param>
+		/// <returns>True if a new current user was selected</returns>
 		private static bool FindNewCurrentUser(out int unisenseId)
 		{
 			for (unisenseId = 0; unisenseId < _users.Length; unisenseId++)
 			{
 				if (_users[unisenseId].IsReadyToConnect) return true;
 			}
+			unisenseId = -1;
 			return false;
 		}
 
-		private static void OnUsbPaird(int unisenseId) //TODO : Debug
+		/// <summary>
+		/// Method called when a USB DualSense was successfully paired to its BT counterpart
+		/// </summary>
+		/// <param name="unisenseId">UniSense Id of the USB DualSense that got paired</param>
+		private static void OnUsbPaird(int unisenseId) 
 		{
 			if (_isMultiplayer)
 			{
@@ -198,16 +194,21 @@ namespace UniSense.Connections
 			}
 			else
 			{
-				if (_currentUserIndex == unisenseId) _handleSingleplayer.OnCurrentUserModified(UserChange.USBAdded);
+				if (_currentUnsId == unisenseId) _handleSingleplayer.OnCurrentUserModified(UserChange.USBAdded);
 				else
 				{
-					_currentUserIndex = unisenseId;
+					_currentUnsId = unisenseId;
 					_handleSingleplayer.SetCurrentUser(unisenseId);
 				}
 
 			}
 		}
-		private static void UsbPairFailed(DualSenseUSBGamepadHID device) //TODO : Debug
+
+		/// <summary>
+		/// Method called when USB DaulSense failed to find a BT counterpart
+		/// </summary>
+		/// <param name="device">USB DualSense that failed to find BT counterpart</param>
+		private static void UsbPairFailed(DualSenseUSBGamepadHID device) 
 		{
 			if (!UniSenseUser.InitUser(device, DeviceType.DualSenseUSB, out int id))
 			{
@@ -220,13 +221,16 @@ namespace UniSense.Connections
 			}
 			else
 			{
-				_currentUserIndex = id;
+				_currentUnsId = id;
 				_handleSingleplayer.SetCurrentUser(id);
 			}
-
-
 		}
 
+		/// <summary>
+		/// Method that deals with the connection and disconnection of all unity input devices
+		/// </summary>
+		/// <param name="device"></param>
+		/// <param name="change"></param>
 		private static void OnDeviceChange(InputDevice device, InputDeviceChange change)
 		{
 			int unisenseId = -1;
@@ -250,7 +254,6 @@ namespace UniSense.Connections
 				case InputDeviceChange.Added:
 					switch (device)
 					{
-
 						case DualSenseBTGamepadHID:
 							InputSystem.EnableDevice(device);
 							if (!UniSenseUser.InitUser(device, DeviceType.DualSenseBT, out unisenseId))
@@ -264,7 +267,7 @@ namespace UniSense.Connections
 							}
 							else
 							{
-								_currentUserIndex = unisenseId;
+								_currentUnsId = unisenseId;
 								_handleSingleplayer.SetCurrentUser(unisenseId);
 							}
 							break;
@@ -286,7 +289,7 @@ namespace UniSense.Connections
 							}
 							else
 							{
-								_currentUserIndex = unisenseId;
+								_currentUnsId = unisenseId;
 								_handleSingleplayer.SetCurrentUser(unisenseId);
 							}
 							break;
@@ -335,7 +338,7 @@ namespace UniSense.Connections
 						}
 						else
 						{
-							if (unisenseId == _currentUserIndex)
+							if (unisenseId == _currentUnsId)
 							{
 								if (!FindNewCurrentUser(out int newId))
 								{
@@ -343,7 +346,7 @@ namespace UniSense.Connections
 								}
 								else
 								{
-									_currentUserIndex = newId;
+									_currentUnsId = newId;
 									_handleSingleplayer.SetCurrentUser(newId);
 								}
 							}

@@ -1,9 +1,14 @@
 ﻿using System.Runtime.InteropServices;
-
 using UnityEngine;
 
+/// <summary>
+/// This file contains data structure definitions that are useful when changing the output state of a DualSense controller
+/// </summary> 
 namespace UniSense
 {
+    /// <summary>
+    /// Encapsulates all output setting that can be changed on a DualSense controller
+    /// </summary>
     public struct DualSenseGamepadState
     {
         public Color? LightBarColor;
@@ -97,10 +102,7 @@ namespace UniSense
         Player3 = 0x04,
         Player4 = 0x08,
         Player5 = 0x10,
-        
-       
-        
-        
+        None = 0x00,
     }
 
     public struct PlayerLedState

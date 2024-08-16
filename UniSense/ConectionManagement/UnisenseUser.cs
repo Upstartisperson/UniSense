@@ -59,31 +59,23 @@ namespace UniSense.Users
 	}
 	public class UniSenseUser
 	{
-        #region Static Portion
+		#region Static Portion
+		private const int c_MaxUsers = 32;
         public static UniSenseUser[] Users;
-		private static OS_Type _osType;
 		private static Queue<int> _availableUnisenseId = new Queue<int>();
 
 		static UniSenseUser()
-		{
-			for (int i = 0; i < 32; i++) _availableUnisenseId.Enqueue(i);
-			_osType = (IntPtr.Size == 4) ? OS_Type._x86 : OS_Type._x64;
-			Users = new UniSenseUser[32];
-			for (int i = 0; i < 32; i++)
-
+		{	
+			Users = new UniSenseUser[c_MaxUsers];
+			
+			for (int i = 0; i < c_MaxUsers; i++)
 			{
 				Users[i] = new UniSenseUser();
 				Users[i].SetDefualts();
-				
+
+				_availableUnisenseId.Enqueue(i);
 			}
-
 		}
-
-		
-		public static void init()
-        {
-
-        }
 
 		/// <summary>
 		/// Use This method to find the unisense ID assocated with an input device given a device ID or a serial number.
@@ -95,11 +87,8 @@ namespace UniSense.Users
         #endregion
 
         public int UniSenseID { get; internal set; }
-
 		public string SerialNumber { get; private set; }
 		public bool ConnectionOpen { get; private set; }
-		
-		public bool Enabled { get; internal set; }
 		public UniSenseDevice Devices { get; private set; }
 		public bool BTAttached { get; private set; }
 		public bool USBAttached { get; private set; }
@@ -147,7 +136,6 @@ namespace UniSense.Users
 		{
 			UniSenseID = -1;
 			ConnectionOpen = false;
-			Enabled = false;
 			Devices = new UniSenseDevice();
 			BTAttached = false;
 			USBAttached = false;
@@ -237,7 +225,6 @@ namespace UniSense.Users
 		/// </summary>
 		/// <param name="device"></param>
 		/// <param name="deviceType"></param>
-		/// <param name="unisenseID"></param>
 		/// <returns>True if successful </returns>
 		internal bool AddDevice(InputDevice device, DeviceType deviceType)
 		{
@@ -258,18 +245,21 @@ namespace UniSense.Users
 					OpenConnection(DeviceType.DualSenseBT);
 					CloseConnection(DeviceType.DualSenseBT, true);
 					break;
+
 				case DeviceType.DualSenseUSB:
 					if (USBAttached) return false;
 					USBAttached = true;
 					this.Devices.DualsenseUSB = device as DualSenseUSBGamepadHID;
 					UserIndexFinder.AddValue(device.deviceId.ToString(), UniSenseID);
 					break;
+
 				case DeviceType.GenericGamepad:
 					if (GenericAttached) return false;
 					GenericAttached = true;
 					this.Devices.GenericGamepad = device as Gamepad;
 					UserIndexFinder.AddValue(device.deviceId.ToString(), UniSenseID);
 					break;
+
 				default:
 					return false;
 			}
@@ -284,34 +274,26 @@ namespace UniSense.Users
 		/// <returns>True if successful</returns>
 		public bool SetActiveDevice(DeviceType deviceType) //Will automatically open and close connections to controllers
 		{
+			Debug.Log("UnisenseID: " + UniSenseID + "ActiveDevice Changed from " + ActiveDevice.ToString() + ", To " + deviceType.ToString()); //TODO: Remove Debug
+
 			if (!_playerInputPaired) return false;
 			if (deviceType == ActiveDevice) return true;
+			
 			_playerInput.user.UnpairDevices();
-			if (ConnectionOpen)
-			{
-				CloseConnection(ActiveDevice, true);
-				//switch (ActiveDevice)
-				//{
-				//	case DeviceType.DualSenseBT:
-				//		CloseConnection(DeviceType.DualSenseBT, true);
-				//		break;
-				//	case DeviceType.DualSenseUSB:
-				//		CloseConnection(DeviceType.DualSenseUSB, true);
-				//		break;
-				//	case DeviceType.GenericGamepad:
-				//		CloseConnection(DeviceType.GenericGamepad, true);
-				//		break;
-				//}
-			}
+			
+			if (ConnectionOpen) CloseConnection(ActiveDevice, true);
 			
 			ConnectionOpen = OpenConnection(deviceType);
 			ActiveDevice = deviceType;
+			
+			//Connection failed to open properly 
 			if (!ConnectionOpen)
 			{
 				ActiveDevice = DeviceType.None;
 				return false;
 			}
 			
+			//Set active device
 			switch (deviceType)
 			{
 				case DeviceType.DualSenseBT:
@@ -327,51 +309,10 @@ namespace UniSense.Users
 					Devices.ActiveDevice = null;
 					return true;
 			}
+
+			//Pair palayerInput to new InputDevice
 			return _playerInput.SwitchCurrentControlScheme(new InputDevice[] { Devices.ActiveDevice });
 
-			//switch (deviceType)
-			//{
-			//	case DeviceType.DualSenseBT:
-			//		ConnectionOpen = OpenConnection(DeviceType.DualSenseBT);
-			//		if (!ConnectionOpen)
-			//		{
-			//			ActiveDevice = DeviceType.None;
-			//			return false;
-			//		}
-			//		ActiveDevice = DeviceType.DualSenseBT;
-			//		this.Devices.ActiveDevice = this.Devices.DualsenseBT;
-			//		if (!_playerInput.SwitchCurrentControlScheme(new InputDevice[] { Devices.ActiveDevice })) return false;
-			//		break;
-			//	case DeviceType.DualSenseUSB:
-			//		ConnectionOpen = OpenConnection(DeviceType.DualSenseUSB);
-			//		if (!ConnectionOpen)
-			//		{
-			//			ActiveDevice = DeviceType.None;
-			//			return false;
-			//		}
-			//		ActiveDevice = DeviceType.DualSenseUSB;
-			//		this.Devices.ActiveDevice = this.Devices.DualsenseUSB;
-			//		Debug.Log(this.UniSenseID);
-			//		if (!_playerInput.SwitchCurrentControlScheme(new InputDevice[] { Devices.ActiveDevice })) return false;
-			//		break;
-			//	case DeviceType.GenericGamepad:
-			//		ConnectionOpen = OpenConnection(DeviceType.GenericGamepad);
-			//		if (!ConnectionOpen)
-			//		{
-			//			ActiveDevice = DeviceType.None;
-			//			return false;
-			//		}
-			//		ActiveDevice = DeviceType.GenericGamepad;
-			//		this.Devices.ActiveDevice = this.Devices.GenericGamepad;
-			//		if (!_playerInput.SwitchCurrentControlScheme(new InputDevice[] { Devices.ActiveDevice })) return false;
-			//		break;
-			//	case DeviceType.None:
-			//		ActiveDevice = DeviceType.None;
-			//		break;
-			//	default:
-			//		break;
-			//}
-			//return true;
 		}
 		/// <summary>
 		/// Returns true if successful
@@ -433,7 +374,7 @@ namespace UniSense.Users
 			if (ActiveDevice == deviceType) ConnectionOpen = false;
 			return true;
 		}
-		//TODO: Test if InputUser.UnpairDevice works
+		
 		/// <summary>
 		/// Method to remove a disconnected device
 		/// </summary>

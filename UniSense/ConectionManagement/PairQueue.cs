@@ -1,6 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.InputSystem;
 
 
@@ -13,20 +11,29 @@ namespace UniSense.pair
     /// </summary>
     public class PairQueue
     {
-        const char QueueTime = (char)10;
+        const char QueueTime = (char)10; //How many input-update cycles should all devices should be held in the queue
         private  List<DualSenseUSBGamepadHID> deviceQueue = new List<DualSenseUSBGamepadHID>();
         private  List<char> deviceTime = new List<char>();
 
+        #region Initialization And Shutdown
         public PairQueue()
         {
             InputSystem.onAfterUpdate += Update;
         }
 
+        /// <summary>
+        /// <see cref="Exit"/> Needs to always be called before the application stops playing
+        /// </summary>
         public void Exit()
         {
             InputSystem.onAfterUpdate -= Update;
         }
-            
+
+        #endregion
+
+        /// <summary>
+        /// Update the device queue
+        /// </summary>
         private void Update()
         {
             if (deviceTime.Count == 0) return;
@@ -44,15 +51,24 @@ namespace UniSense.pair
             {
                 deviceTime[i]++;
             }
-            
         }
 
+        /// <summary>
+        /// Place a new <see cref="DualSenseUSBGamepadHID"/> in the device queue
+        /// </summary>
+        /// <param name="device"></param>
         public void QueueDevice(DualSenseUSBGamepadHID device)
         {
             deviceQueue.Add(device);
             deviceTime.Add((char)0);
 
         }
+
+        /// <summary>
+        /// Attempt to remove a device in the queue. ONLY call when a device that is in the queue has been disconnected from the system
+        /// </summary>
+        /// <param name="device"></param>
+        /// <returns></returns>
         public bool TryRemoveQueue(DualSenseUSBGamepadHID device)
         {
             for (int i = 0; i < deviceQueue.Count; i++)

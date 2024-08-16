@@ -25,35 +25,35 @@ namespace UniSense.PlayerManager
     }
 
 
-    public class DualSenseManager : MonoBehaviour, IManage
+    public class DualSenseManager : MonoBehaviour, IManageMultiPlayer
     {
 
         #region Inspector Fields
         public bool _ManagerConfigured = false;
 
-        public NotificationBehavoir notificationBehavoir;
-        public  JoinBehavoir _JoinBehavoir;
+        public NotificationBehavoir notificationBehavoir = NotificationBehavoir.None;
+        public  JoinBehavoir _JoinBehavoir = JoinBehavoir.JoinPlayersAutomatically;
 
         public InputActionProperty _JoinAction;
         public GameObject _PlayerPrefab;
 
         [Tooltip("Allow Mouse and Keyboard Player to join, Will be set to player 1")]
-        public bool _AllowMouseKeyboard;
+        public bool _AllowMouseKeyboard = false;
         [Tooltip("Allow Non-DualSense Controllers to Join")]
-        public bool _AllowGeneric;
+        public bool _AllowGeneric = false;
 
         [Range(1, 16)]
-        public int _MaxPlayers;
+        public int _MaxPlayers = 16;
 
-        public bool _EnableSplitScreen;
-        public bool _customSplitScreen;
+        public bool _EnableSplitScreen = true;
+        public bool _customSplitScreen = false;
         public SplitScreenBlueprint _customBlueprint;
-        public bool _MaintianAscpectRatio;
+        public bool _MaintianAscpectRatio = false;
         
-        public bool _SetFixedNumber;
+        public bool _SetFixedNumber = false;
         [Range(1, 16)]
-        public int _NumScreens;
-        public Rect _ScreenSpace;
+        public int _NumScreens = 4;
+        public Rect _ScreenSpace = new Rect(0, 0, 1, 1);
 
         private Camera _SSBackroundCam;
 
@@ -162,7 +162,15 @@ namespace UniSense.PlayerManager
             if (_initTimer++ == 0) InputSystem.onAfterUpdate += QueueInit;
             if (_initTimer > 50)
             {
-                UniSensePlayer.Initialize(_MaxPlayers);
+                PlayerInput[] playerList = FindObjectsOfType<PlayerInput>();
+                if(playerList != null)
+                {
+                    foreach (PlayerInput player in playerList)
+                    {
+                        ConnectPlayer(player.gameObject);
+                    }
+                }
+                UniSensePlayer.Initialize();
 
                 InputSystem.onAfterUpdate -= QueueInit;
                 UniSenseConnectionHandler.InitializeMultiplayer(this, _AllowMouseKeyboard, _AllowGeneric);
@@ -318,6 +326,14 @@ namespace UniSense.PlayerManager
             return _players[_players.Count - 1];
         }
 
+        public UniSensePlayer ConnectPlayer(GameObject player)
+        {
+            _players.Add(UniSensePlayer.ConnectPlayer(player, _nextPlayerId++));
+            UpdateSplitScreen();
+            NotifyPlayerJoined(_nextPlayerId - 1);
+            return _players[_players.Count - 1];
+        }
+
         public UniSensePlayer JoinMouseKeyboardPlayer(GameObject playerPrefab)
         {
             for (int i = 0; i < _players.Count; i++)
@@ -331,6 +347,14 @@ namespace UniSense.PlayerManager
             _players[_players.Count - 1].SetMouseKeyboard();
             UpdateSplitScreen();
             return _players[_players.Count - 1];
+        }
+
+        private void UpdatePlayerNumbers()
+        {
+            for (int i = 0; i < _players.Count; i++)
+            {
+                _players[i].SetPlayerNum(i + 1);
+            }
         }
 
         public bool RemovePlayer(int playerId)
@@ -359,7 +383,7 @@ namespace UniSense.PlayerManager
 
         public void UpdateSplitScreen()
         {
-
+            UpdatePlayerNumbers();
             if (!_EnableSplitScreen) return;
 
             if (_customSplitScreen)
