@@ -1,1 +1,11 @@
-{}
+{
+    "name": "New Controls",
+    "maps": [],
+    "controlSchemes": [
+        {
+            "name": "New control scheme",
+            "bindingGroup": "New control scheme",
+            "devices": []
+        }
+    ]
+}

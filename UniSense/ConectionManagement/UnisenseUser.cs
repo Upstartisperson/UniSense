@@ -8,6 +8,9 @@ using DeviceType = UniSense.Utilities.DeviceType;
 
 using System;
 using System.Collections.Generic;
+using Codice.CM.Common.Tree.Partial;
+using System.Threading;
+
 namespace UniSense.Users
 {
 	internal static class UserIndexFinder
@@ -279,7 +282,7 @@ namespace UniSense.Users
 			if (!_playerInputPaired) return false;
 			if (deviceType == ActiveDevice) return true;
 			
-			_playerInput.user.UnpairDevices();
+			if(ActiveDevice != DeviceType.None) _playerInput.user.UnpairDevices();
 			
 			if (ConnectionOpen) CloseConnection(ActiveDevice, true);
 			
@@ -311,7 +314,12 @@ namespace UniSense.Users
 			}
 
 			//Pair palayerInput to new InputDevice
-			return _playerInput.SwitchCurrentControlScheme(new InputDevice[] { Devices.ActiveDevice });
+			if(_playerInput.SwitchCurrentControlScheme(new InputDevice[] { Devices.ActiveDevice }))
+			{
+				return true;
+			}
+			Debug.LogError("Player input failed to add the USB dualsense to a control scheme. Verify that an input Control scheme exists that can be used by the USB DualSense");
+			return false;
 
 		}
 		/// <summary>
@@ -328,7 +336,7 @@ namespace UniSense.Users
 				
 				if (status != DS5W_ReturnValue.OK)
 				{
-					Debug.Log(status.ToString());
+					Debug.LogError(status.ToString());
 					return false;
 				}
 				status = DS5W.initDeviceContext(ref Devices.enumInfoBT, ref Devices.contextBT);

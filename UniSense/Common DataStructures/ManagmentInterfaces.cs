@@ -39,7 +39,7 @@ namespace UniSense.Management
 		public void SetNoCurrentUser();
 		public void SetMouseKeyboard();
 
-		public Camera PlayerCamera;
+		
 	
 	}
 
